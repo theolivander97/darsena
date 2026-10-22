@@ -38,7 +38,7 @@ jobs:
         # Sin la clave de actualizaciones (p. ej. en un fork) se compila igual, solo sin el archivo .sig.
         run: |
           if ($env:TAURI_SIGNING_PRIVATE_KEY) { npm run tauri build }
-          else { npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}' }
+          else { npm run tauri build -- --config src-tauri/tauri.sin-actualizaciones.conf.json }
         env:
           # Clave con la que se firman las actualizaciones automáticas (secreto del repositorio).
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
