@@ -12,13 +12,21 @@ Descarga, actualiza y juega, y gestiona tus datos de juego. Gratis, de código a
 > Dársena **no distribuye juegos**. Solo lista ports hechos por la comunidad y descarga las builds que sus autores publican en GitHub.
 > Los datos del juego original (ROM, ISO, archivos) los pones tú, de tu propia copia.
 
+## Capturas
+
+| | |
+|---|---|
+| ![Explorar](docs/img/explorar.png) | ![Ficha de un juego](docs/img/ficha.png) |
+| ![Biblioteca](docs/img/biblioteca.png) | ![Requisitos y ¿Funciona en tu PC?](docs/img/requisitos.png) |
+| ![Pantalla grande: inicio](docs/img/pantalla-grande-inicio.png) | ![Pantalla grande: ficha](docs/img/pantalla-grande-ficha.png) |
+
 ## Qué hace
 
 - **Explorar:** catálogo de ports con ficha, sinopsis, tráilers, capturas, requisitos del sistema y reseñas.
 - **Biblioteca:** estanterías, tiempo de juego, accesos directos, actualización de ports (con comprobación SHA-256) y juegos propios.
 - **Descargas inteligentes:** HTTP con varias conexiones y torrent a la vez (librqbit), con alternativa automática.
 - **Taller y Comunidad:** mods de la comunidad, reseñas, informes de «¿funciona en tu PC?».
-- **Partidas en la nube** en un Gist privado de tu cuenta de GitHub, y **modo mando** a pantalla completa.
+- **Partidas en la nube** en un Gist privado de tu cuenta de GitHub, y **Pantalla grande**, una vista a pantalla completa pensada para el sofá, con mando o teclado.
 - **Para autores:** sube tu port, edita su ficha con un `darsena.json` y responde a las reseñas.
 
 Hecho con **Tauri 2 + Rust**. La interfaz es HTML y JavaScript sin framework (`ui/`).

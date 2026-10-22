@@ -2155,7 +2155,7 @@ function ctxMenuHtml(gm) {
 
 // Botón ⚙ de la biblioteca: abre el mismo menú que el clic derecho, debajo del botón.
 document.addEventListener("click", (e) => {
-  const b = e.target.closest("[data-gear]");
+  const b = e.target.closest("button[data-gear]");
   if (!b) return;
   e.stopPropagation();
   const open = $("#ctx-menu");

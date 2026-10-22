@@ -27,11 +27,15 @@ Cada vez salen más **ports nativos** de juegos clásicos: Star Fox 64, Gears of
 Vice City Stories… Cada uno vive en su propio repositorio, con su propia forma de descargarse y de pedirte los archivos
 del juego. **Dársena los reúne en un solo sitio**, con la comodidad de una tienda:
 
-- **Explorar** un catálogo con más de 400 juegos, con portadas, sinopsis, tráilers y los más descargados.
+- **Explorar** un catálogo con casi 500 juegos, con portadas, sinopsis, tráilers, requisitos y los más descargados.
 - **Biblioteca** propia: añade juegos, elige entre varios ports del mismo juego, instala con un clic y juega.
 - **Descargas rápidas**: desde las versiones oficiales de GitHub, por torrent o por enlace directo con varias
   conexiones a la vez. Pausar, reanudar y compartir lo que descargas.
 - **Fuentes**: listas de enlaces que añades tú para traer tus propias copias de los juegos.
+- **¿Funciona en tu PC?**: la ficha compara tu procesador, memoria y gráfica con los requisitos de cada juego.
+- **Taller y Comunidad**: mods de la comunidad, reseñas y informes de compatibilidad.
+- **Partidas en la nube** en un Gist privado de tu cuenta de GitHub.
+- **Pantalla grande**: una vista a pantalla completa para jugar desde el sofá, con mando o teclado.
 - **Reseñas, perfil y logros** con tu cuenta de GitHub, y el tiempo de juego de cada título.
 - **Siempre al día**: el catálogo se actualiza solo y el launcher se actualiza a sí mismo, con firma verificada.
 
@@ -42,7 +46,15 @@ del juego. **Dársena los reúne en un solo sitio**, con la comodidad de una tie
 </tr>
 <tr>
 <td align="center"><sub>Cada juego tiene su ficha: de qué trata, tráiler y ports disponibles.</sub></td>
-<td align="center"><sub>Varios ports del mismo juego: eliges cuál instalar desde la biblioteca.</sub></td>
+<td align="center"><sub>Tu biblioteca: novedades de los ports que tienes y lo último que has jugado.</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/img/requisitos.png" alt="Requisitos del sistema y «¿Funciona en tu PC?»"></td>
+<td width="50%"><img src="docs/img/pantalla-grande-inicio.png" alt="Pantalla grande: el inicio"></td>
+</tr>
+<tr>
+<td align="center"><sub>Requisitos de cada juego y cómo encaja tu PC.</sub></td>
+<td align="center"><sub>Pantalla grande: para jugar desde el sofá, con mando o teclado.</sub></td>
 </tr>
 </table>
 

@@ -549,7 +549,7 @@ fn set_cloud_saves(state: S, value: bool) -> R<()> {
     state.store.save_settings().map_err(err)
 }
 
-/// Modo mando: la ventana a pantalla completa (y de vuelta).
+/// Pantalla grande: la ventana a pantalla completa (y de vuelta).
 #[tauri::command]
 fn set_fullscreen(app: AppHandle, value: bool) -> R<()> {
     let w = app.get_webview_window("main").ok_or("ventana")?;
