@@ -34,7 +34,11 @@ jobs:
         run: node tools/fetch-data.mjs
 
       - name: Compilar
-        run: npm run tauri build
+        shell: pwsh
+        # Sin la clave de actualizaciones (p. ej. en un fork) se compila igual, solo sin el archivo .sig.
+        run: |
+          if ($env:TAURI_SIGNING_PRIVATE_KEY) { npm run tauri build }
+          else { npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}' }
         env:
           # Clave con la que se firman las actualizaciones automáticas (secreto del repositorio).
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -47,4 +51,4 @@ jobs:
           path: |
             src-tauri/target/release/bundle/nsis/*-setup.exe
             src-tauri/target/release/bundle/nsis/*-setup.exe.sig
-          if-no-files-found: error
+          if-no-files-found: warn
