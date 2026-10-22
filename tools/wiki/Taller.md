@@ -24,5 +24,5 @@ Dársena descarga la última release, la extrae en la carpeta del port y apunta 
 ## Mods +18 y denuncias
 
 - Los mods +18 están **ocultos por defecto**. Quien quiera verlos lo activa en **Ajustes → General → Taller**, y siempre salen al final y marcados.
-- Cada mod tiene un botón **🚩 Denunciar**. Con tres denuncias de usuarios distintos, el mod se oculta hasta que se revise. Con dos denuncias de «contenido +18 sin marcar», pasa a ser +18.
+- Cada mod tiene un botón **Denunciar**. Con tres denuncias de usuarios distintos, el mod se oculta hasta que se revise. Con dos denuncias de «contenido +18 sin marcar», pasa a ser +18.
 - Para retirar un mod, el autor de Dársena cierra su discusión en la categoría **Taller**.

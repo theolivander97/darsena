@@ -273,4 +273,4 @@ writeFileSync(TRANSLATIONS, JSON.stringify(translations, null, 1) + "\n");
 writeFileSync(PENDING, `Juegos sin sinopsis (${pending.length}). Añádelos a mano en info-overrides.json:\n  "games": { "<id>": { "synopsis": { "text": "…" }, "trailers": [{ "kind": "youtube", "id": "…" }] } }\n\n${pending.join("\n")}\n`);
 const withS = Object.values(result).filter((e) => e.synopsis).length;
 const withT = Object.values(result).filter((e) => e.trailers?.length).length;
-console.log(`\n✔ info.json: ${withS}/${games.size} con sinopsis, ${withT} con tráiler. Pendientes: ${pending.length} (ver catalog/info-pendientes.txt)`);
+console.log(`\nOK: info.json: ${withS}/${games.size} con sinopsis, ${withT} con tráiler. Pendientes: ${pending.length} (ver catalog/info-pendientes.txt)`);

@@ -96,7 +96,7 @@ if (!cmd) {
     ...(s.appInRepo ? { branch: s.appInRepo.branch, exe: s.appInRepo.exe } : {}),
     ...(s.appInRepo?.setupExe ? { setup: { exe: s.appInRepo.setupExe, done: ["CAMBIAR: archivo que existe cuando ya está preparado"] } } : {}),
   };
-  if (s.appInRepo?.setupExe) console.log(`⚠ Revisa "setup.done" en el catálogo: pon un archivo que solo exista cuando ${s.appInRepo.setupExe} terminó.`);
+  if (s.appInRepo?.setupExe) console.log(`Aviso: Revisa "setup.done" en el catálogo: pon un archivo que solo exista cuando ${s.appInRepo.setupExe} terminó.`);
   // Una línea más al principio de la lista; actualizar.mjs valida, completa y ordena.
   const text = readFileSync(CATALOG, "utf8").replace(/"games": \[\n/, `"games": [\n${JSON.stringify(entry)},\n`);
   writeFileSync(CATALOG, text);
@@ -111,16 +111,16 @@ if (!cmd) {
     if (yt && !g.trailers) g.trailers = [{ kind: "youtube", id: yt, title: "Tráiler", titleEn: "Trailer" }];
     writeFileSync(OVERRIDES, JSON.stringify(ov, null, 2) + "\n");
   }
-  await reply(d, `✅ **Aprobado.** ${s.title} ya está en el catálogo de Dársena: aparecerá en los launchers en cuanto se publique el catálogo. ¡Gracias por tu port!`, "RESOLVED");
-  console.log(`\n✔ #${n} aprobado: ${s.title} (${s.repo}) añadido al catálogo como ${port?.id}.`);
+  await reply(d, `**Aprobado.** ${s.title} ya está en el catálogo de Dársena: aparecerá en los launchers en cuanto se publique el catálogo. ¡Gracias por tu port!`, "RESOLVED");
+  console.log(`\nOK: #${n} aprobado: ${s.title} (${s.repo}) añadido al catálogo como ${port?.id}.`);
   console.log("  Siguiente: portadas (tools\\covers), node tools\\catalog\\informacion.mjs y node tools\\catalog\\publicar.mjs");
 } else if (cmd === "rechazar") {
   const reason = rest.join(" ").trim();
   if (!reason) fail('Escribe el motivo: node tools\\catalog\\ports-subidos.mjs rechazar <n> "motivo"');
   const { d, s } = await find(n);
   if (d.closed) fail(`#${n} ya está cerrado.`);
-  await reply(d, `❌ **No aprobado por ahora.**\n\n${reason}\n\nCuando lo corrijas, puedes volver a subirlo desde Dársena.`, "OUTDATED");
-  console.log(`✔ #${n} rechazado (${s.title}). El autor verá el motivo en «Mis ports subidos».`);
+  await reply(d, `**No aprobado por ahora.**\n\n${reason}\n\nCuando lo corrijas, puedes volver a subirlo desde Dársena.`, "OUTDATED");
+  console.log(`OK: #${n} rechazado (${s.title}). El autor verá el motivo en «Mis ports subidos».`);
 } else {
   fail(`Orden desconocida: ${cmd}. Usa: (nada), ver, aprobar o rechazar.`);
 }

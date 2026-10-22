@@ -39,7 +39,7 @@ function renderPerm() {
   p.push(state.mouse ? 'Ratón: sí (clic en la imagen para capturarlo)' : 'Ratón: no');
   let t = p.join(' · ');
   if (state.paused) t += '\nEl anfitrión ha pausado la entrada.';
-  if (state.vigemError) t += '\n⚠ ' + state.vigemError;
+  if (state.vigemError) t += '\n' + state.vigemError;
   permEl.textContent = t;
   permEl.style.whiteSpace = 'pre-line';
 }

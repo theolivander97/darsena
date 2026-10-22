@@ -5,7 +5,7 @@ Descarga, actualiza y juega, y gestiona tus datos de juego. Gratis, de código a
 
 **English:** Dársena is a free, open-source desktop launcher for community PC ports (decompilations, static recompilations and native ports). It downloads and updates ports, keeps your game data organized, tracks playtime and runs on Windows. It ships no games: you bring your own copy.
 
-[⬇ Descargar / Download](https://github.com/theolivander97/darsena-launcher/releases/latest) ·
+[Descargar / Download](https://github.com/theolivander97/darsena-launcher/releases/latest) ·
 [Wiki](https://github.com/theolivander97/darsena-launcher/wiki) ·
 [Catálogo y reseñas](https://github.com/theolivander97/darsena-launcher)
 

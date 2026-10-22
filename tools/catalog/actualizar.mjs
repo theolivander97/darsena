@@ -28,7 +28,7 @@ const FIELD_ORDER = ["id", "title", "port", "author", "origin", "repo", "gitlab"
 const TODAY = new Date().toISOString().slice(0, 10);
 
 function fail(msg) {
-  console.error(`\n✘ ${msg}\n`);
+  console.error(`\nError: ${msg}\n`);
   process.exit(1);
 }
 
@@ -165,7 +165,7 @@ catalog.games.forEach((g, i) => {
   }
 });
 
-for (const w of warnings) console.warn(`⚠ ${w}`);
+for (const w of warnings) console.warn(`Aviso: ${w}`);
 if (errors.length) fail(`Hay ${errors.length} error(es); no se ha guardado nada:\n  - ${errors.join("\n  - ")}`);
 
 // ---------- 3. Agrupar ports por juego ----------
@@ -192,7 +192,7 @@ for (const [k, ports] of groups) {
   for (const g of ports) g.game = overrides[g.id] ?? id;
 }
 for (const id of Object.keys(overrides)) {
-  if (!catalog.games.some((g) => g.id === id)) console.warn(`⚠ games-overrides.json: el port "${id}" no existe`);
+  if (!catalog.games.some((g) => g.id === id)) console.warn(`Aviso: games-overrides.json: el port "${id}" no existe`);
 }
 
 // ---------- 4. Ordenar y guardar (un port por línea) ----------
@@ -208,4 +208,4 @@ writeFileSync(catalogFile, out);
 const byGame = {};
 for (const g of catalog.games) (byGame[g.game] ??= []).push(g);
 const multi = Object.values(byGame).filter((v) => v.length > 1).length;
-console.log(`✔ Catálogo actualizado: ${catalog.games.length} ports -> ${Object.keys(byGame).length} juegos (${multi} con varios ports)`);
+console.log(`OK: Catálogo actualizado: ${catalog.games.length} ports -> ${Object.keys(byGame).length} juegos (${multi} con varios ports)`);

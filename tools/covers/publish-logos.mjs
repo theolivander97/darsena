@@ -40,5 +40,5 @@ const changed = git("diff", "--name-only", "--diff-filter=M", remoteHead, "HEAD"
 console.log(`Purgando ${changed.length} archivo(s) en jsDelivr…`);
 for (const file of changed) {
   const res = await fetch(`https://purge.jsdelivr.net/gh/${REPO}@${BRANCH}/${encodeURIComponent(file)}`).catch((e) => ({ ok: false, status: e.message }));
-  console.log(`${res.ok ? "✔" : "✘"} ${file} ${res.ok ? "" : res.status}`);
+  console.log(`${res.ok ? "OK" : "Error"} ${file} ${res.ok ? "" : res.status}`);
 }

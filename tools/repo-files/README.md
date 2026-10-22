@@ -13,7 +13,7 @@ recompilaciones, descompilaciones y motores reescritos de clásicos de consola y
 [![Descargas](https://img.shields.io/github/downloads/theolivander97/darsena-launcher/total?label=descargas&color=ffc20e&labelColor=111111)](https://github.com/theolivander97/darsena-launcher/releases)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-ffc20e?labelColor=111111)
 
-### [⬇ Descargar Dársena](https://github.com/theolivander97/darsena-launcher/releases/latest) · [📖 Wiki](https://github.com/theolivander97/darsena-launcher/wiki) · [🎮 Pedir un juego](https://github.com/theolivander97/darsena-launcher/issues/new?template=pedir-un-juego.yml)
+### [Descargar Dársena](https://github.com/theolivander97/darsena-launcher/releases/latest) · [Wiki](https://github.com/theolivander97/darsena-launcher/wiki) · [🎮 Pedir un juego](https://github.com/theolivander97/darsena-launcher/issues/new?template=pedir-un-juego.yml)
 
 <img src="docs/img/explorar.png" alt="Explorar: destacados y novedades" width="100%">
 
@@ -27,13 +27,13 @@ Cada vez salen más **ports nativos** de juegos clásicos: Star Fox 64, Gears of
 Vice City Stories… Cada uno vive en su propio repositorio, con su propia forma de descargarse y de pedirte los archivos
 del juego. **Dársena los reúne en un solo sitio**, con la comodidad de una tienda:
 
-- 🧭 **Explorar** un catálogo con más de 400 juegos, con portadas, sinopsis, tráilers y los más descargados.
-- 📚 **Biblioteca** propia: añade juegos, elige entre varios ports del mismo juego, instala con un clic y juega.
-- ⚡ **Descargas rápidas**: desde las versiones oficiales de GitHub, por torrent o por enlace directo con varias
+- **Explorar** un catálogo con más de 400 juegos, con portadas, sinopsis, tráilers y los más descargados.
+- **Biblioteca** propia: añade juegos, elige entre varios ports del mismo juego, instala con un clic y juega.
+- **Descargas rápidas**: desde las versiones oficiales de GitHub, por torrent o por enlace directo con varias
   conexiones a la vez. Pausar, reanudar y compartir lo que descargas.
-- 🧩 **Fuentes**: listas de enlaces que añades tú para traer tus propias copias de los juegos.
-- ⭐ **Reseñas, perfil y logros** con tu cuenta de GitHub, y el tiempo de juego de cada título.
-- 🔄 **Siempre al día**: el catálogo se actualiza solo y el launcher se actualiza a sí mismo, con firma verificada.
+- **Fuentes**: listas de enlaces que añades tú para traer tus propias copias de los juegos.
+- **Reseñas, perfil y logros** con tu cuenta de GitHub, y el tiempo de juego de cada título.
+- **Siempre al día**: el catálogo se actualiza solo y el launcher se actualiza a sí mismo, con firma verificada.
 
 <table>
 <tr>
@@ -52,9 +52,9 @@ Dársena separa **tres cosas** que otros launchers mezclan:
 
 | | Qué es | Quién lo pone |
 |---|---|---|
-| 📋 **Catálogo** | La lista de juegos y de sus ports: nombre, consola, portada, repositorio oficial y qué archivos necesita cada uno. | Lo mantiene el autor de Dársena y se actualiza solo al abrir el launcher. |
-| 🔗 **Fuentes** | Listas JSON con enlaces de descarga (torrent, magnet o directo) para ports o para tus datos. | **Tú.** Dársena no trae ninguna. |
-| 💾 **Tus datos** | Los archivos del juego original (ROM, ISO, carpeta del disco…) que pide cada port. | **Tú**, desde tu propia copia. |
+| **Catálogo** | La lista de juegos y de sus ports: nombre, consola, portada, repositorio oficial y qué archivos necesita cada uno. | Lo mantiene el autor de Dársena y se actualiza solo al abrir el launcher. |
+| **Fuentes** | Listas JSON con enlaces de descarga (torrent, magnet o directo) para ports o para tus datos. | **Tú.** Dársena no trae ninguna. |
+| **Tus datos** | Los archivos del juego original (ROM, ISO, carpeta del disco…) que pide cada port. | **Tú**, desde tu propia copia. |
 
 Al instalar, todo queda ordenado por juego:
 

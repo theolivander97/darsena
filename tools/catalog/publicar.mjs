@@ -101,7 +101,7 @@ const changed = [
 ].map((p) => p.split("/")[0]);
 const groups = [...new Set(changed)];
 if (!groups.length) {
-  console.log("✔ El catálogo publicado ya está al día.");
+  console.log("OK: El catálogo publicado ya está al día.");
 } else {
   for (const g of groups) {
     git(REPO_DIR, "add", "-A", "--", g);
@@ -111,7 +111,7 @@ if (!groups.length) {
   if (git(REPO_DIR, "status", "--porcelain")) git(REPO_DIR, "commit", "-q", "-m", message);
   if (!hasCommits) git(REPO_DIR, "branch", "-M", "main");
   execFileSync("git", ["push", "-u", "origin", "main"], { cwd: REPO_DIR, stdio: "inherit" });
-  console.log("✔ Catálogo publicado. Los launchers lo verán al abrirse (GitHub tarda hasta 5 minutos en servir el cambio).");
+  console.log("OK: Catálogo publicado. Los launchers lo verán al abrirse (GitHub tarda hasta 5 minutos en servir el cambio).");
 }
 writeFileSync(LAST_SYNC, read(join(REPO_DIR, "catalog.json")));
 writeFileSync(FILES_SYNC, JSON.stringify(Object.fromEntries(repoFiles.map((rel) => [rel, sha(join(REPO_DIR, rel))])), null, 1));

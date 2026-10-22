@@ -35,5 +35,5 @@ console.log(`Purgando ${changed.length} archivo(s) en jsDelivr…`);
 for (const file of changed) {
   const url = `https://purge.jsdelivr.net/gh/${REPO}@${BRANCH}/${file.split("/").map(encodeURIComponent).join("/")}`;
   const res = await fetch(url).catch((e) => ({ ok: false, status: e.message }));
-  console.log(`${res.ok ? "✔" : "✘"} ${file} ${res.ok ? "" : res.status}`);
+  console.log(`${res.ok ? "OK" : "Error"} ${file} ${res.ok ? "" : res.status}`);
 }

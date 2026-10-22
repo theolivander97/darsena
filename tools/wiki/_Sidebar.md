@@ -16,4 +16,4 @@
 **Mantenedor**
 - [[Guía del catálogo|Guia-del-catalogo]]
 
-[⬇ Descargar Dársena](https://github.com/theolivander97/darsena-launcher/releases/latest)
+[Descargar Dársena](https://github.com/theolivander97/darsena-launcher/releases/latest)

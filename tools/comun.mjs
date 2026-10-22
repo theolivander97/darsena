@@ -33,7 +33,7 @@ export function token() {
 }
 
 export function fail(msg) {
-  console.error(`\n✘ ${msg}\n`);
+  console.error(`\nError: ${msg}\n`);
   process.exit(1);
 }
 

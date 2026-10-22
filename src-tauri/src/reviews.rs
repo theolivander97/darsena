@@ -283,9 +283,9 @@ const COMPAT_MARK: &str = "darsena:compat";
 pub async fn report_compat(token: &str, game_id: &str, game_title: &str, result: &str, port: &str, hw: &crate::hardware::Hardware) -> anyhow::Result<()> {
     anyhow::ensure!(["good", "ok", "bad"].contains(&result), "resultado no válido");
     let label = match result {
-        "good" => "✅ Funciona bien",
-        "ok" => "⚠️ Funciona con problemas",
-        _ => "❌ No funciona bien",
+        "good" => "Funciona bien",
+        "ok" => "Funciona con problemas",
+        _ => "No funciona bien",
     };
     let data = json!({
         "result": result,

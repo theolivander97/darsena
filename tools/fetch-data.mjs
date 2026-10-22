@@ -19,5 +19,5 @@ for (const [url, dest] of FILES) {
   JSON.parse(text); // que sea JSON válido antes de guardarlo
   mkdirSync(dirname(join(ROOT, dest)), { recursive: true });
   writeFileSync(join(ROOT, dest), text);
-  console.log(`✔ ${dest} (${(text.length / 1024).toFixed(0)} KB)`);
+  console.log(`OK: ${dest} (${(text.length / 1024).toFixed(0)} KB)`);
 }

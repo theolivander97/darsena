@@ -3,7 +3,7 @@
 //! - Cada mod es un repositorio de GitHub con releases. Solo su dueño o un colaborador puede subirlo.
 //! - Subirlo crea una discusión en la categoría "Taller" del repo darsena-launcher, con los datos en un bloque
 //!   invisible <!-- darsena:mod {json} -->. No hay revisión previa: aparece en cuanto la Action lo recoge.
-//! - La Action (.github/scripts/mods.mjs) escribe mods.json, el resumen público: «me gusta» (reacciones 👍),
+//! - La Action (.github/scripts/mods.mjs) escribe mods.json, el resumen público: «me gusta» (reacciones),
 //!   denuncias (comentarios <!-- darsena:report reason=… -->) y los ocultos por denuncias o cerrados por el autor
 //!   de Dársena. Un mod +18 lo marca su autor o dos denuncias de «contenido +18».
 //! - Instalar un mod extrae su última release en la carpeta del port y apunta qué archivos puso, para quitarlo
@@ -202,7 +202,7 @@ pub async fn report(node: &str, reason: &str, text: &str) -> anyhow::Result<()> 
         _ => "otro motivo",
     };
     let text: String = text.trim().chars().take(1000).collect();
-    let body = format!("<!-- darsena:report reason={reason} -->\n🚩 **Denuncia:** {label}\n\n{text}");
+    let body = format!("<!-- darsena:report reason={reason} -->\n**Denuncia:** {label}\n\n{text}");
     gql(
         &token,
         "mutation($d:ID!,$b:String!){addDiscussionComment(input:{discussionId:$d,body:$b}){comment{id}}}",

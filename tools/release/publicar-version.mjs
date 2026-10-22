@@ -99,5 +99,5 @@ await upload(assetName, readFileSync(join(BUNDLE, setup)), "application/octet-st
 await upload(`${assetName}.sig`, Buffer.from(signature), "text/plain");
 await upload("latest.json", Buffer.from(JSON.stringify(latest, null, 2)), "application/json");
 
-console.log(`\n✔ Dársena ${version} publicada: ${release.html_url}`);
+console.log(`\nOK: Dársena ${version} publicada: ${release.html_url}`);
 console.log("  Los launchers instalados la verán en la ventana de comprobación al abrirse.");

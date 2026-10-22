@@ -261,7 +261,7 @@ await pool(games, 8, async (g) => {
         writeFileSync(out, buf);
         index[g.id] = { ...index[g.id], v: shortHash(buf), src: `sgdb:${sgdbGame.gameId}/${grid.id}` };
         added++;
-        console.log(`✔ ${g.title}  ←  SteamGridDB "${sgdbGame.name}" (grid ${grid.id})  [${sgdbGame.s}]`);
+        console.log(`OK: ${g.title}  ←  SteamGridDB "${sgdbGame.name}" (grid ${grid.id})  [${sgdbGame.s}]`);
         return;
       }
     }
@@ -279,9 +279,9 @@ await pool(games, 8, async (g) => {
     writeFileSync(out, buf);
     index[g.id] = { ...index[g.id], v: shortHash(buf), src: `libretro:${best.system}/${best.name}` };
     added++;
-    console.log(`✔ ${g.title}  ←  ${best.name}  [${best.s}]`);
+    console.log(`OK: ${g.title}  ←  ${best.name}  [${best.s}]`);
   } catch (e) {
-    console.log(`✘ ${g.title}: ${e.message}`);
+    console.log(`Error: ${g.title}: ${e.message}`);
     missing.push(g);
   }
 });
@@ -319,7 +319,7 @@ if (SGDB_KEY) {
       index[g.id] = { ...index[g.id], h: shortHash(buf) };
       heroesAdded++;
     } catch (e) {
-      console.log(`✘ hero ${g.title}: ${e.message}`);
+      console.log(`Error: hero ${g.title}: ${e.message}`);
     }
   });
 }
@@ -360,7 +360,7 @@ if (SGDB_KEY) {
       logosIndex[g.id] = shortHash(buf);
       logosAdded++;
     } catch (e) {
-      console.log(`✘ logo ${g.title}: ${e.message}`);
+      console.log(`Error: logo ${g.title}: ${e.message}`);
     }
   });
 }

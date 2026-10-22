@@ -59,6 +59,6 @@ writeFileSync(catalogFile, JSON.stringify(catalog));
 execFileSync("node", [join(TOOLS, "catalog", "actualizar.mjs")], { stdio: "inherit" });
 
 const top = [...catalog.games].sort((a, b) => (b.downloads ?? 0) - (a.downloads ?? 0)).slice(0, 10);
-console.log(`\n✔ Descargas actualizadas en ${updated} ports.`);
+console.log(`\nOK: Descargas actualizadas en ${updated} ports.`);
 console.log("Top 10:\n" + top.map((g, n) => `  ${String(n + 1).padStart(2)}. ${g.title} (${g.port}) — ${g.downloads.toLocaleString("es")}`).join("\n"));
-if (missing.length) console.log(`\n⚠ ${missing.length} repos no encontrados (borrados o renombrados):\n  ${missing.join("\n  ")}`);
+if (missing.length) console.log(`\nAviso: ${missing.length} repos no encontrados (borrados o renombrados):\n  ${missing.join("\n  ")}`);

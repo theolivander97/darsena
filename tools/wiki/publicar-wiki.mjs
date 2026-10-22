@@ -32,9 +32,9 @@ const pages = readdirSync(PAGES).filter((f) => f.endsWith(".md"));
 for (const p of pages) copyFileSync(join(PAGES, p), join(WIKI_DIR, p));
 git(WIKI_DIR, "add", "-A");
 if (!git(WIKI_DIR, "status", "--porcelain")) {
-  console.log("✔ La wiki ya está al día.");
+  console.log("OK: La wiki ya está al día.");
 } else {
   git(WIKI_DIR, "commit", "-q", "-m", message);
   execFileSync("git", ["push", "-q", "origin", "HEAD"], { cwd: WIKI_DIR, stdio: "inherit" });
-  console.log(`✔ Wiki publicada: ${pages.length} páginas → https://github.com/${OWNER}/${REPO}/wiki`);
+  console.log(`OK: Wiki publicada: ${pages.length} páginas → https://github.com/${OWNER}/${REPO}/wiki`);
 }
