@@ -106,7 +106,7 @@ async function fetchListing(system) {
 async function toCapsule(input) {
   const bg = await sharp(input).resize(W, H, { fit: "cover" }).blur(28).modulate({ brightness: 0.55 }).toBuffer();
   const fg = await sharp(input).resize(W - 40, H - 40, { fit: "inside" }).toBuffer();
-  return sharp(bg).composite([{ input: fg, gravity: "center" }]).webp({ quality: 82 }).toBuffer();
+  return sharp(bg).composite([{ input: fg, gravity: "center" }]).webp({ quality: 74 }).toBuffer();
 }
 
 const shortHash = (buf) => createHash("sha1").update(buf).digest("hex").slice(0, 10);
@@ -257,7 +257,7 @@ await pool(games, 8, async (g) => {
         const res = await fetch(grid.url);
         if (!res.ok) throw new Error(`HTTP ${res.status} ${grid.url}`);
         // Los pósters de SteamGridDB ya son 600x900: solo se normaliza tamaño y formato.
-        const buf = await sharp(Buffer.from(await res.arrayBuffer())).resize(W, H, { fit: "cover" }).webp({ quality: 82 }).toBuffer();
+        const buf = await sharp(Buffer.from(await res.arrayBuffer())).resize(W, H, { fit: "cover" }).webp({ quality: 74 }).toBuffer();
         writeFileSync(out, buf);
         index[g.id] = { ...index[g.id], v: shortHash(buf), src: `sgdb:${sgdbGame.gameId}/${grid.id}` };
         added++;
@@ -314,7 +314,7 @@ if (SGDB_KEY) {
       }
       const res = await fetch(hero.url);
       if (!res.ok) throw new Error(`HTTP ${res.status} ${hero.url}`);
-      const buf = await sharp(Buffer.from(await res.arrayBuffer())).resize(1280, 413, { fit: "cover" }).webp({ quality: 78 }).toBuffer();
+      const buf = await sharp(Buffer.from(await res.arrayBuffer())).resize(1280, 413, { fit: "cover" }).webp({ quality: 72 }).toBuffer();
       writeFileSync(out, buf);
       index[g.id] = { ...index[g.id], h: shortHash(buf) };
       heroesAdded++;
