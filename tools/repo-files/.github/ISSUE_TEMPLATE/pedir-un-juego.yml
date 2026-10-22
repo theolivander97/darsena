@@ -1,0 +1,59 @@
+name: 🎮 Pedir un juego
+description: Propón un port para el catálogo de Dársena.
+title: "[Pedir juego] "
+labels: ["pedir juego"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por proponer un juego. El catálogo lo mantiene el autor de Dársena y revisa cada propuesta a mano.
+        **Solo entran ports que piden tu propia copia del juego**: no se añaden proyectos que incluyan los archivos
+        del juego original, ROMs, ISOs o BIOS.
+  - type: input
+    id: juego
+    attributes:
+      label: Juego
+      description: Nombre del juego original (no del proyecto).
+      placeholder: "Star Fox 64"
+    validations:
+      required: true
+  - type: dropdown
+    id: consola
+    attributes:
+      label: Consola original
+      options:
+        - Nintendo 64
+        - GameCube / Wii / Wii U
+        - Super Nintendo / NES
+        - Game Boy / GBA / DS / 3DS
+        - Switch
+        - PlayStation / PS2 / PS3 / PS4 / PSP
+        - Xbox / Xbox 360
+        - Sega
+        - Arcade
+        - PC
+        - Otra
+    validations:
+      required: true
+  - type: input
+    id: enlace
+    attributes:
+      label: Enlace al port
+      description: Repositorio o página oficial del proyecto.
+      placeholder: "https://github.com/autor/proyecto"
+    validations:
+      required: true
+  - type: checkboxes
+    id: requisitos
+    attributes:
+      label: Comprobaciones
+      options:
+        - label: El port pide tu propia copia del juego y no incluye sus archivos.
+          required: true
+        - label: Tiene una versión para Windows publicada por su autor.
+          required: true
+  - type: textarea
+    id: notas
+    attributes:
+      label: Notas
+      description: Qué archivos del juego pide, si es experimental, si hay varios ports del mismo juego…

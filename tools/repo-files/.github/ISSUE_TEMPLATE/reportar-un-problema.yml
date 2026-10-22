@@ -1,0 +1,34 @@
+name: 🐞 Reportar un problema
+description: Algo no funciona en el launcher o en un juego del catálogo.
+title: "[Problema] "
+labels: ["problema"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Si el problema es **dentro de un juego** (se cierra, gráficos, controles…), suele ser cosa del port:
+        repórtalo en el repositorio de su autor (enlace en la ficha del juego). Aquí van los problemas de Dársena.
+  - type: input
+    id: version
+    attributes:
+      label: Versión de Dársena
+      description: Sale en la ventana de arranque.
+      placeholder: "0.1.8"
+    validations:
+      required: true
+  - type: textarea
+    id: que-pasa
+    attributes:
+      label: Qué pasa
+      description: Qué hiciste, qué esperabas y qué ocurrió. Si hay un mensaje de error, cópialo tal cual.
+    validations:
+      required: true
+  - type: input
+    id: juego
+    attributes:
+      label: Juego afectado (si lo hay)
+  - type: textarea
+    id: capturas
+    attributes:
+      label: Capturas
+      description: Puedes arrastrar imágenes aquí.

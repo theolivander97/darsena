@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dársena · Juego remoto</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #0b0d12; color: #e8eaf0; font: 14px system-ui, sans-serif; overflow: hidden; }
+  video { width: 100vw; height: 100vh; object-fit: contain; background: #000; display: block; }
+  #hud { position: fixed; left: 12px; bottom: 12px; padding: 6px 10px; border-radius: 8px;
+         background: #000a; font-variant-numeric: tabular-nums; pointer-events: none; }
+  #perm { position: fixed; right: 12px; top: 12px; padding: 6px 10px; border-radius: 8px; background: #000a; max-width: 320px; }
+  #msg { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; padding: 16px; }
+  button { font: inherit; padding: 8px 14px; border-radius: 10px; border: 0; background: #4f7cff; color: #fff; cursor: pointer; }
+  #bar { position: fixed; left: 12px; top: 12px; display: flex; gap: 8px; }
+  .hide { display: none !important; }
+</style>
+</head>
+<body>
+<video id="v" autoplay playsinline muted></video>
+<div id="bar" class="hide"><button id="unmute">Activar sonido</button><button id="fs">Pantalla completa</button></div>
+<div id="hud" class="hide"></div>
+<div id="perm" class="hide"></div>
+<div id="msg"><div><p id="status">Conectando con el anfitrión…</p></div></div>
+<script>
+const $ = (id) => document.getElementById(id);
+const video = $('v'), status = $('status'), hud = $('hud'), permEl = $('perm');
+let ctl = null, padCh = null;
+let state = { pad: true, kb: false, mouse: false, slot: null, paused: false, vigemError: null };
+const nombre = new URLSearchParams(location.search).get('nombre') || localStorage.getItem('darsena-nombre') || '';
+
+function sendCtl(o) { if (ctl && ctl.readyState === 'open') ctl.send(JSON.stringify(o)); }
+
+function renderPerm() {
+  const p = [];
+  p.push(state.pad ? (state.slot !== null && state.slot !== undefined ? `Mando ${state.slot + 1}` : 'Mando (pulsa un botón)') : 'Mando: no');
+  p.push(state.kb ? 'Teclado: sí' : 'Teclado: no');
+  p.push(state.mouse ? 'Ratón: sí (clic en la imagen para capturarlo)' : 'Ratón: no');
+  let t = p.join(' · ');
+  if (state.paused) t += '\nEl anfitrión ha pausado la entrada.';
+  if (state.vigemError) t += '\n⚠ ' + state.vigemError;
+  permEl.textContent = t;
+  permEl.style.whiteSpace = 'pre-line';
+}
+
+async function connect() {
+  const pc = new RTCPeerConnection({ iceServers: [] }); // LAN: solo candidatos locales
+  const tr = pc.addTransceiver('video', { direction: 'recvonly' });
+  pc.addTransceiver('audio', { direction: 'recvonly' });
+  const caps = RTCRtpReceiver.getCapabilities('video');
+  if (caps && tr.setCodecPreferences) {
+    const h264 = caps.codecs.filter((c) => c.mimeType === 'video/H264');
+    if (h264.length) tr.setCodecPreferences(h264);
+  }
+  for (const t of pc.getTransceivers()) {
+    try { t.receiver.jitterBufferTarget = 0; } catch {}
+    try { t.receiver.playoutDelayHint = 0; } catch {}
+  }
+
+  // Canal fiable para hello/teclado/ratón/avisos y canal no fiable para el estado del mando.
+  ctl = pc.createDataChannel('ctl', { ordered: true });
+  padCh = pc.createDataChannel('pad', { ordered: false, maxRetransmits: 0 });
+  ctl.onopen = () => { if (nombre) sendCtl({ t: 'hello', name: nombre }); };
+  ctl.onmessage = (e) => {
+    try { const m = JSON.parse(e.data); if (m.t === 'state') { state = m; renderPerm(); } } catch {}
+  };
+
+  pc.ontrack = (e) => {
+    video.srcObject = e.streams[0] || new MediaStream([e.track]);
+    $('msg').classList.add('hide');
+    hud.classList.remove('hide');
+    permEl.classList.remove('hide');
+    $('bar').classList.remove('hide');
+    renderPerm();
+  };
+  pc.onconnectionstatechange = () => {
+    if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) {
+      $('msg').classList.remove('hide');
+      status.textContent = 'Conexión perdida. Recarga la página para volver a entrar.';
+      hud.classList.add('hide'); permEl.classList.add('hide'); $('bar').classList.add('hide');
+    }
+  };
+
+  await pc.setLocalDescription(await pc.createOffer());
+  if (pc.iceGatheringState !== 'complete') {
+    await new Promise((res) => {
+      pc.addEventListener('icegatheringstatechange', () => pc.iceGatheringState === 'complete' && res());
+      setTimeout(res, 3000);
+    });
+  }
+  const r = await fetch('offer', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ type: pc.localDescription.type, sdp: pc.localDescription.sdp }),
+  });
+  if (!r.ok) throw new Error(await r.text());
+  await pc.setRemoteDescription(await r.json());
+  startStats(pc);
+}
+
+function startStats(pc) {
+  let last = null;
+  setInterval(async () => {
+    const stats = await pc.getStats();
+    let inbound, pair;
+    stats.forEach((s) => {
+      if (s.type === 'inbound-rtp' && s.kind === 'video') inbound = s;
+      if (s.type === 'candidate-pair' && s.nominated) pair = s;
+    });
+    if (!inbound) return;
+    if (last) {
+      const dt = (inbound.timestamp - last.timestamp) / 1000;
+      const kbps = ((inbound.bytesReceived - last.bytesReceived) * 8) / dt / 1000;
+      const jb = inbound.jitterBufferDelay && inbound.jitterBufferEmittedCount
+        ? (inbound.jitterBufferDelay / inbound.jitterBufferEmittedCount) * 1000 : 0;
+      const rtt = pair && pair.currentRoundTripTime ? pair.currentRoundTripTime * 1000 : 0;
+      hud.textContent = `${inbound.frameWidth}×${inbound.frameHeight} · ${Math.round(inbound.framesPerSecond || 0)} fps · ${Math.round(kbps)} kb/s · RTT ${rtt.toFixed(0)} ms · buffer ${jb.toFixed(0)} ms`;
+    }
+    last = inbound;
+  }, 1000);
+}
+
+// ---------- Mando (Gamepad API, mapeo "standard" → XInput) ----------
+// Bits XInput: UP 1, DOWN 2, LEFT 4, RIGHT 8, START 0x10, BACK 0x20, LTHUMB 0x40, RTHUMB 0x80,
+// LB 0x100, RB 0x200, A 0x1000, B 0x2000, X 0x4000, Y 0x8000.
+const MAP = [[0, 0x1000], [1, 0x2000], [2, 0x4000], [3, 0x8000], [4, 0x100], [5, 0x200], [8, 0x20], [9, 0x10],
+             [10, 0x40], [11, 0x80], [12, 1], [13, 2], [14, 4], [15, 8]];
+const ax = (v) => Math.max(-32768, Math.min(32767, Math.round((Math.abs(v) < 0.08 ? 0 : v) * 32767)));
+let lastPad = '', lastPadSent = 0;
+function pollPad() {
+  if (state.pad && !state.paused) {
+    const gp = [...navigator.getGamepads()].find((g) => g && g.connected);
+    if (gp) {
+      let b = 0;
+      for (const [i, bit] of MAP) if (gp.buttons[i] && gp.buttons[i].pressed) b |= bit;
+      const lt = Math.round(((gp.buttons[6] && gp.buttons[6].value) || 0) * 255);
+      const rt = Math.round(((gp.buttons[7] && gp.buttons[7].value) || 0) * 255);
+      // El eje Y de la Gamepad API crece hacia abajo; XInput hacia arriba.
+      const m = { t: 'pad', b, lt, rt, lx: ax(gp.axes[0] || 0), ly: ax(-(gp.axes[1] || 0)), rx: ax(gp.axes[2] || 0), ry: ax(-(gp.axes[3] || 0)) };
+      const s = JSON.stringify(m), now = performance.now();
+      // Solo cambios, más un latido cada 250 ms (el canal no fiable puede perder el último estado).
+      if (s !== lastPad || now - lastPadSent > 250) {
+        if (padCh && padCh.readyState === 'open') padCh.send(s);
+        lastPad = s; lastPadSent = now;
+      }
+    }
+  }
+  requestAnimationFrame(pollPad);
+}
+requestAnimationFrame(pollPad);
+
+// ---------- Teclado y ratón ----------
+const held = new Set();
+window.addEventListener('keydown', (e) => {
+  if (!state.kb || state.paused) return;
+  e.preventDefault();
+  if (e.repeat) return;
+  held.add(e.code);
+  sendCtl({ t: 'key', c: e.code, d: true });
+}, true);
+window.addEventListener('keyup', (e) => {
+  if (!held.has(e.code)) return;
+  e.preventDefault();
+  held.delete(e.code);
+  sendCtl({ t: 'key', c: e.code, d: false });
+}, true);
+window.addEventListener('blur', () => { for (const c of held) sendCtl({ t: 'key', c, d: false }); held.clear(); });
+
+video.addEventListener('click', () => { if (state.mouse && !state.paused && !document.pointerLockElement) video.requestPointerLock(); });
+video.addEventListener('mousedown', (e) => { if (document.pointerLockElement === video) { e.preventDefault(); sendCtl({ t: 'mb', b: e.button, d: true }); } });
+window.addEventListener('mouseup', (e) => { if (document.pointerLockElement === video) sendCtl({ t: 'mb', b: e.button, d: false }); });
+video.addEventListener('contextmenu', (e) => e.preventDefault());
+let mdx = 0, mdy = 0;
+document.addEventListener('mousemove', (e) => { if (document.pointerLockElement === video) { mdx += e.movementX; mdy += e.movementY; } });
+setInterval(() => { // agrupamos el movimiento a ~120 Hz
+  if (mdx || mdy) { sendCtl({ t: 'mm', dx: Math.round(mdx), dy: Math.round(mdy) }); mdx = mdy = 0; }
+}, 8);
+video.addEventListener('wheel', (e) => { if (document.pointerLockElement === video) { e.preventDefault(); sendCtl({ t: 'wh', dy: -Math.sign(e.deltaY) * 120 }); } }, { passive: false });
+document.addEventListener('pointerlockchange', () => {
+  if (!document.pointerLockElement) for (const b of [0, 1, 2, 3, 4]) sendCtl({ t: 'mb', b, d: false });
+});
+
+$('unmute').onclick = () => { video.muted = false; $('unmute').classList.add('hide'); };
+$('fs').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+connect().catch((e) => { status.textContent = 'No se pudo conectar: ' + e.message; });
+</script>
+</body>
+</html>

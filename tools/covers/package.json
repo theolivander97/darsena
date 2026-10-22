@@ -1,0 +1,8 @@
+{
+  "name": "portlauncher-covers",
+  "private": true,
+  "type": "module",
+  "description": "Construye la base de datos de portadas propia de Dársena",
+  "scripts": { "build": "node build-covers.mjs" },
+  "dependencies": { "sharp": "^0.34.0" }
+}

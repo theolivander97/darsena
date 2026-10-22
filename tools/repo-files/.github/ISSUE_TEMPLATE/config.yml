@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Wiki de Dársena
+    url: https://github.com/theolivander97/darsena-launcher/wiki
+    about: Cómo funcionan las fuentes, los datos del juego, las descargas y la cuenta de GitHub.
+  - name: 💬 Reseñas y comunidad
+    url: https://github.com/theolivander97/darsena-launcher/discussions
+    about: Reseñas de los juegos y conversación con otros jugadores.

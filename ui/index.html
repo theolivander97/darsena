@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dársena</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand" data-view="store" data-i18n-title="Ir a Explorar" title="Ir a Explorar"><img class="brand-logo" src="logo.svg" alt=""> DÁRSENA</div>
+    <nav class="tabs">
+      <div class="tab-wrap"><button data-view="store" class="active"><i data-icon="explore"></i><span data-i18n="EXPLORAR">EXPLORAR</span></button><div class="tab-menu"><button data-nav="store:sec-featured" data-i18n="Destacados">Destacados</button><button data-nav="store:sec-popular" data-i18n="Más descargados">Más descargados</button><button data-nav="store:sec-recent" data-i18n="Añadidos recientemente">Añadidos recientemente</button><button data-nav="store:all-title" data-i18n="Todos los juegos">Todos los juegos</button></div></div>
+      <div class="tab-wrap"><button data-view="library"><i data-icon="library"></i><span data-i18n="BIBLIOTECA">BIBLIOTECA</span></button><div class="tab-menu"><button data-nav="library:home" data-i18n="Página principal">Página principal</button><button data-nav="library:lib-shelves" data-i18n="Colecciones">Colecciones</button><button data-nav="addgame:" data-i18n="Añadir un juego">Añadir un juego</button><button data-nav="bigpicture:" data-i18n="Modo mando">Modo mando</button><hr><button data-nav="downloads:" data-i18n="Descargas">Descargas</button></div></div>
+      <div class="tab-wrap"><button data-view="community"><i data-icon="community"></i><span data-i18n="COMUNIDAD">COMUNIDAD</span></button><div class="tab-menu"><button data-nav="community:com-mods" data-i18n="Taller">Taller</button><button data-nav="community:com-reviews" data-i18n="Reseñas recientes">Reseñas recientes</button><hr><button data-nav="submitmod:" data-i18n="Subir un mod">Subir un mod</button></div></div>
+      <div class="tab-wrap"><button data-tab="profile" data-profile=""><i data-icon="user"></i><span id="tab-profile-name" data-i18n="PERFIL">PERFIL</span></button><div class="tab-menu"><button data-nav="profile:" data-i18n="Perfil y logros">Perfil y logros</button><button data-nav="dev:" data-i18n="Panel del desarrollador">Panel del desarrollador</button><button data-nav="submit:" data-i18n="Subir un port">Subir un port</button><button data-nav="submitmod:" data-i18n="Subir un mod">Subir un mod</button><hr><button data-nav="settings:" data-i18n="Ajustes">Ajustes</button></div></div>
+    </nav>
+    <div class="spacer"></div>
+    <div id="account" class="account"></div>
+  </header>
+
+  <main id="app">
+    <!-- EXPLORAR -->
+    <section id="view-store" class="view active">
+      <!-- Inicio: carrusel y filas. Se oculta al buscar o filtrar. -->
+      <div id="home"></div>
+      <h2 class="section-title home-all" id="all-title" data-i18n="Todos los juegos">Todos los juegos</h2>
+      <div class="toolbar">
+        <input id="search" type="search" data-i18n-ph="Buscar juego, port o autor…" placeholder="Buscar juego, port o autor…" autocomplete="off" />
+        <select id="console-filter"><option value="">Todas las consolas</option></select>
+        <select id="sort">
+          <option value="title" data-i18n="Orden: A-Z">Orden: A-Z</option>
+          <option value="console" data-i18n="Orden: consola">Orden: consola</option>
+          <option value="links" data-i18n="Orden: con enlaces primero">Orden: con enlaces primero</option>
+          <option value="downloads" data-i18n="Orden: más descargados">Orden: más descargados</option>
+          <option value="recent" data-i18n="Orden: añadidos recientemente">Orden: añadidos recientemente</option>
+        </select>
+        <label class="check small"><input id="only-links" type="checkbox" /> <span data-i18n="Solo con enlaces de fuentes">Solo con enlaces de fuentes</span></label>
+        <label class="check small"><input id="no-ai" type="checkbox" /> <span data-i18n="Ocultar ports hechos con IA">Ocultar ports hechos con IA</span></label>
+        <span id="store-count" class="muted small"></span>
+      </div>
+      <div id="store-grid" class="grid"></div>
+    </section>
+
+    <!-- DETALLE DE JUEGO -->
+    <section id="view-detail" class="view">
+      <div id="detail"></div>
+    </section>
+
+    <!-- BIBLIOTECA -->
+    <section id="view-library" class="view">
+      <div class="library">
+        <aside id="lib-list" class="lib-list"></aside>
+        <div id="lib-detail" class="lib-detail"></div>
+      </div>
+    </section>
+
+    <!-- COMUNIDAD -->
+    <section id="view-community" class="view">
+      <div id="community"></div>
+    </section>
+
+    <!-- DESCARGAS -->
+    <section id="view-downloads" class="view">
+      <div id="dl-list"></div>
+    </section>
+
+    <!-- SUBIR UN PORT (para sus autores) -->
+    <section id="view-submit" class="view">
+      <div id="submit"></div>
+    </section>
+
+    <!-- PANEL DEL DESARROLLADOR -->
+    <section id="view-dev" class="view">
+      <div id="dev"></div>
+    </section>
+
+    <!-- PERFIL (tuyo o de otro jugador) -->
+    <section id="view-profile" class="view">
+      <div id="profile"></div>
+    </section>
+
+    <!-- AJUSTES (con Fuentes dentro) -->
+    <section id="view-settings" class="view">
+      <div class="settings-layout">
+        <nav class="settings-nav">
+          <div class="settings-title" data-i18n="Ajustes">Ajustes</div>
+          <button data-set-tab="general" data-i18n="General">General</button><button data-set-tab="library" data-i18n="Biblioteca">Biblioteca</button><button data-set-tab="downloads" data-i18n="Descargas">Descargas</button><button data-set-tab="sources" data-i18n="Fuentes">Fuentes</button><button data-set-tab="advanced" data-i18n="Avanzado">Avanzado</button>
+        </nav>
+        <div class="settings-panes">
+        <div class="settings-pane" data-pane="general">
+          <h2 data-i18n="General">General</h2>
+      <div class="setting" id="set-language">
+        <label data-i18n="Idioma">Idioma</label>
+        <select id="language">
+          <option value="" data-i18n="Automático (el de Windows)">Automático (el de Windows)</option>
+          <option value="es">Español</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+      <div class="setting" id="set-tray">
+        <label data-i18n="Segundo plano">Segundo plano</label>
+        <label class="check">
+          <input id="close-to-tray" type="checkbox" />
+          <span data-i18n="Al cerrar la ventana, Dársena sigue abierta en la bandeja del sistema (junto al reloj)">Al cerrar la ventana, Dársena sigue abierta en la bandeja del sistema (junto al reloj)</span>
+        </label>
+        <p class="muted small" data-i18n="Si hay un juego abierto, Dársena siempre se queda en la bandeja para seguir contando el tiempo de juego. Para salir del todo: clic derecho en su icono → Salir.">Si hay un juego abierto, Dársena siempre se queda en la bandeja para seguir contando el tiempo de juego. Para salir del todo: clic derecho en su icono → Salir.</p>
+      </div>
+      <div class="setting" id="set-discord" hidden>
+        <label>Discord</label>
+        <label class="check">
+          <input id="discord-presence" type="checkbox" />
+          <span data-i18n="Mostrar en Discord a qué estás jugando">Mostrar en Discord a qué estás jugando</span>
+        </label>
+      </div>
+      <div class="setting" id="set-cloud">
+        <label data-i18n="Partidas en la nube">Partidas en la nube</label>
+        <label class="check">
+          <input id="cloud-saves" type="checkbox" />
+          <span data-i18n="Guardar mis partidas en un Gist privado de mi cuenta de GitHub y traerlas en otro PC">Guardar mis partidas en un Gist privado de mi cuenta de GitHub y traerlas en otro PC</span>
+        </label>
+        <p class="muted small" data-i18n="Se suben al cerrar cada juego y se comprueban antes de jugar. Antes de sustituir tus partidas, Dársena guarda una copia en la carpeta .darsena-copias del juego.">Se suben al cerrar cada juego y se comprueban antes de jugar. Antes de sustituir tus partidas, Dársena guarda una copia en la carpeta .darsena-copias del juego.</p>
+      </div>
+      <div class="setting" id="set-nsfw">
+        <label data-i18n="Taller">Taller</label>
+        <label class="check">
+          <input id="show-nsfw" type="checkbox" />
+          <span data-i18n="Mostrar mods +18 (siempre aparecen al final y marcados)">Mostrar mods +18 (siempre aparecen al final y marcados)</span>
+        </label>
+      </div>
+        </div>
+        <div class="settings-pane" data-pane="library">
+          <h2 data-i18n="Biblioteca">Biblioteca</h2>
+      <div class="setting" id="set-library">
+        <label data-i18n="Carpeta de instalación por defecto">Carpeta de instalación por defecto</label>
+        <div class="row">
+          <input id="install-dir" type="text" readonly />
+          <button class="btn" id="change-dir" data-i18n="Otra carpeta…">Otra carpeta…</button>
+        </div>
+        <p class="muted small" data-i18n="O crea tu carpeta DarsenaLibrary en cualquiera de tus discos:">O crea tu carpeta DarsenaLibrary en cualquiera de tus discos:</p>
+        <div id="drives" class="drives"></div>
+      </div>
+        </div>
+        <div class="settings-pane" data-pane="downloads">
+          <h2 data-i18n="Descargas">Descargas</h2>
+      <div class="setting" id="set-share">
+        <label data-i18n="Compartir descargas">Compartir descargas</label>
+        <label class="check">
+          <input id="share" type="checkbox" />
+          <span data-i18n="Compartir (sembrar) los ports que descargues por torrent mientras Dársena está abierto">Compartir (sembrar) los ports que descargues por torrent mientras Dársena está abierto</span>
+        </label>
+        <div class="row" style="margin-top:8px">
+          <span class="muted" data-i18n="Límite de subida">Límite de subida</span>
+          <select id="upload-limit">
+            <option value="256">256 KB/s</option>
+            <option value="512">512 KB/s</option>
+            <option value="1024">1 MB/s</option>
+            <option value="2048">2 MB/s</option>
+            <option value="5120">5 MB/s</option>
+            <option value="0" data-i18n="Sin límite">Sin límite</option>
+          </select>
+        </div>
+        <p id="share-info" class="muted small"></p>
+        <label class="check" style="margin-top:14px">
+          <input id="auto-update" type="checkbox" />
+          <span data-i18n="Actualizar los ports automáticamente al abrir Dársena (se conservan partidas y ajustes)">Actualizar los ports automáticamente al abrir Dársena (se conservan partidas y ajustes)</span>
+        </label>
+        <p class="muted small" data-i18n="Cuanta más gente comparte, más rápido baja cada port para los demás. Se guarda una copia del archivo descargado (en la carpeta <code>.compartido</code> del juego) para poder compartirlo; se borra al desinstalar. Tus datos de juego nunca se comparten.">Cuanta más gente comparte, más rápido baja cada port para los demás. Se guarda una copia del archivo descargado (en la carpeta <code>.compartido</code> del juego) para poder compartirlo; se borra al desinstalar. Tus datos de juego nunca se comparten.</p>
+      </div>
+        </div>
+        <div class="settings-pane" data-pane="sources" id="source-list-pane">
+          <h2 data-i18n="Fuentes">Fuentes</h2>
+      <p class="muted" data-i18n="Las fuentes son listas JSON de terceros con enlaces de descarga (torrent o directos) para juegos del catálogo. Dársena no incluye ninguna: tú decides cuáles añadir y respondes del contenido que descargas. Sin fuentes, siempre tienes la descarga oficial desde GitHub.">Las fuentes son listas JSON de terceros con enlaces de descarga (torrent o directos) para juegos del catálogo. Dársena no incluye ninguna: tú decides cuáles añadir y respondes del contenido que descargas. Sin fuentes, siempre tienes la descarga oficial desde GitHub.</p>
+      <form id="source-form" class="row">
+        <input id="source-url" type="text" data-i18n-ph="https://ejemplo.com/fuente.json  o  D:\ruta\fuente.json" placeholder="https://ejemplo.com/fuente.json  o  D:\ruta\fuente.json" required />
+        <button class="btn primary" type="submit" data-i18n="Añadir fuente">Añadir fuente</button>
+        <button class="btn" type="button" id="refresh-sources" data-i18n="Actualizar todas">Actualizar todas</button>
+      </form>
+      <div id="source-list"></div>
+        </div>
+        <div class="settings-pane" data-pane="advanced">
+          <h2 data-i18n="Avanzado">Avanzado</h2>
+      <div class="setting">
+        <label data-i18n="Token de GitHub (opcional)">Token de GitHub (opcional)</label>
+        <div class="row">
+          <input id="gh-token" type="password" data-i18n-ph="ghp_… — sube el límite de 60 a 5000 consultas/hora" placeholder="ghp_… — sube el límite de 60 a 5000 consultas/hora" autocomplete="off" />
+          <button class="btn" id="save-token" data-i18n="Guardar">Guardar</button>
+        </div>
+        <p class="muted small" data-i18n="Sin token, GitHub permite 60 consultas por hora a la versión más reciente de cada port. Basta un token sin permisos.">Sin token, GitHub permite 60 consultas por hora a la versión más reciente de cada port. Basta un token sin permisos.</p>
+      </div>
+      <div class="setting">
+        <label data-i18n="Origen de portadas">Origen de portadas</label>
+        <div class="row">
+          <input id="covers-origin" type="text" data-i18n-ph="Por defecto (CDN de Dársena)" placeholder="Por defecto (CDN de Dársena)" autocomplete="off" />
+          <button class="btn" id="save-covers" data-i18n="Guardar">Guardar</button>
+        </div>
+        <p class="muted small" data-i18n="URL base o carpeta local con <code>[id].webp</code>. Las portadas se guardan en caché en disco tras la primera carga.">URL base o carpeta local con <code>[id].webp</code>. Las portadas se guardan en caché en disco tras la primera carga.</p>
+      </div>
+        </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Diálogo de instalación -->
+  <dialog id="install-dialog">
+    <form method="dialog">
+      <h3 id="install-title"></h3>
+      <p id="install-from" class="muted"></p>
+      <label data-i18n="Biblioteca">Biblioteca</label>
+      <div class="row">
+        <input id="install-path" type="text" readonly />
+        <button class="btn" type="button" id="install-browse" data-i18n="Cambiar…">Cambiar…</button>
+      </div>
+      <p id="install-layout" class="muted small layout"></p>
+      <p id="install-needs" class="req small"></p>
+      <div id="install-data" class="install-data hidden">
+        <label class="check"><input id="install-with-data" type="checkbox" checked /> <span data-i18n="Descargar también tus datos del juego">Descargar también tus datos del juego</span></label>
+        <select id="install-data-select"></select>
+        <label id="install-extract-row" class="check small hidden">
+          <input id="install-extract" type="checkbox" checked />
+          <span data-i18n="Extraer el .zip al instalar">Extraer el .zip al instalar</span> <span class="muted" data-i18n="(si lo desmarcas, se guarda tal cual en Datos)">(si lo desmarcas, se guarda tal cual en Datos)</span>
+        </label>
+      </div>
+      <div class="row end">
+        <button class="btn" value="cancel" data-i18n="Cancelar">Cancelar</button>
+        <button class="btn primary" value="ok" data-i18n="Instalar">Instalar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Inicio de sesión con GitHub (Device Flow) -->
+  <dialog id="login-dialog">
+    <form method="dialog">
+      <h3 data-i18n="Iniciar sesión con GitHub">Iniciar sesión con GitHub</h3>
+      <p class="muted" data-i18n="Tu cuenta de GitHub te permite escribir reseñas. Dársena nunca ve tu contraseña.">Tu cuenta de GitHub te permite escribir reseñas. Dársena nunca ve tu contraseña.</p>
+      <ol class="login-steps">
+        <li data-i18n="Copia este código:">Copia este código:</li>
+      </ol>
+      <div id="login-code" class="login-code">········</div>
+      <ol class="login-steps" start="2">
+        <li data-i18n="Pégalo en <b>github.com/login/device</b> y autoriza a <b>Darsena Launcher</b>.">Pégalo en <b>github.com/login/device</b> y autoriza a <b>Darsena Launcher</b>.</li>
+      </ol>
+      <div class="row center">
+        <button class="btn play" type="button" id="login-open" data-i18n="COPIAR CÓDIGO Y ABRIR GITHUB">COPIAR CÓDIGO Y ABRIR GITHUB</button>
+      </div>
+      <p id="login-status" class="muted small center">Pidiendo código a GitHub…</p>
+      <div class="row end">
+        <button class="btn" value="cancel" data-i18n="Cancelar">Cancelar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer class="statusbar">
+    <button id="dl-bar" class="dl-bar" data-view="downloads"></button>
+  </footer>
+
+  <div id="toasts"></div>
+
+  <!-- Ventana de comprobación al abrir: versión de la app y catálogo -->
+  <div id="splash">
+    <div class="splash-box">
+      <div class="splash-sea"><img class="splash-mark" src="logo.svg" alt=""></div>
+      <div class="splash-logo">DÁRSENA</div>
+      <div id="splash-version" class="muted small"></div>
+      <div class="splash-steps">
+        <div id="splash-app" class="splash-step"><span class="ico"></span><span class="txt"></span></div>
+        <div id="splash-catalog" class="splash-step"><span class="ico"></span><span class="txt" data-i18n="En espera…">En espera…</span></div>
+      </div>
+      <div id="splash-update" class="splash-update hidden">
+        <div class="upd-title"></div>
+        <div class="upd-notes muted small"></div>
+        <div class="upd-actions row">
+          <button class="btn play" data-upd="now" data-i18n="ACTUALIZAR AHORA">ACTUALIZAR AHORA</button>
+          <button class="btn ghost" data-upd="later" data-i18n="Más tarde">Más tarde</button>
+        </div>
+        <div class="upd-progress hidden">
+          <div class="bar"><div style="width:0%"></div></div>
+          <div class="upd-bytes muted small"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="icons.js"></script>
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

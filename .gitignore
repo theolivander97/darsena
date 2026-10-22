@@ -1,0 +1,21 @@
+node_modules/
+src-tauri/target/
+src-tauri/gen/
+# Ruta de compilación de este PC (sin espacios, por windres)
+src-tauri/.cargo/
+
+# Datos (viven en otros repositorios; tools/fetch-data.mjs los baja para compilar)
+/catalog/
+/covers/
+/logos/
+
+# Secretos y cachés locales
+tools/.env
+tools/covers/.env
+tools/covers/.cache/
+tools/catalog/.ultima-publicacion*
+tools/catalog/.cache-*.json
+
+# Fuentes de ejemplo con enlaces de descarga
+fuentes/
+ejemplos/

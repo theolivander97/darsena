@@ -1,0 +1,50 @@
+# Compila el instalador de Windows de Dársena a partir del código de este repositorio.
+# El instalador resultante es el único binario que se firma (ver «Code signing policy» en el README).
+name: Compilar instalador
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Dependencias
+        run: npm ci
+
+      - name: Datos que se incrustan (catálogo, información, portadas)
+        run: node tools/fetch-data.mjs
+
+      - name: Compilar
+        run: npm run tauri build
+        env:
+          # Clave con la que se firman las actualizaciones automáticas (secreto del repositorio).
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Guardar el instalador
+        uses: actions/upload-artifact@v4
+        with:
+          name: instalador-windows
+          path: |
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/bundle/nsis/*-setup.exe.sig
+          if-no-files-found: error

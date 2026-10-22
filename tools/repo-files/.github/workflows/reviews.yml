@@ -1,0 +1,56 @@
+# Genera reviews.json (resumen público de las reseñas de Discussions) para que Dársena
+# muestre notas y reseñas sin necesidad de iniciar sesión.
+name: Resumen de reseñas y mods
+
+on:
+  discussion:
+    types: [created, edited, deleted, category_changed]
+  discussion_comment:
+    types: [created, edited, deleted]
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  discussions: read
+
+concurrency:
+  group: reviews-json
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Generar reviews.json
+        run: node .github/scripts/reviews.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+      - name: Generar mods.json (Taller)
+        run: node .github/scripts/mods.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+      - name: Publicar si cambió
+        run: |
+          touch mods.json
+          if git diff --quiet -- reviews.json mods.json && git ls-files --error-unmatch reviews.json mods.json >/dev/null 2>&1; then
+            echo "Sin cambios"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          [ -s mods.json ] || echo '{"mods":[]}' > mods.json
+          git add reviews.json mods.json
+          git commit -m "Resumen público de reseñas y mods"
+          for i in 1 2 3; do
+            git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1

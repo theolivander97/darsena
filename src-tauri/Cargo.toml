@@ -1,0 +1,83 @@
+[package]
+name = "darsena"
+version = "0.1.15"
+description = "Dársena: launcher de juegos porteados"
+license = "GPL-3.0-or-later"
+edition = "2021"
+
+[lib]
+name = "darsena_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-single-instance = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+librqbit = "9"
+reqwest = { version = "0.13", features = ["stream", "json"] }
+futures-util = "0.3"
+anyhow = "1"
+zip = "9"
+regex = "1"
+sha1 = "0.10"
+sha2 = "0.10"
+keyring = { version = "3", features = ["windows-native"] }
+tauri-plugin-updater = "2"
+# Juego remoto (src/remote): opcional, desactivado por defecto. Activar con `--features remote`.
+webrtc = { version = "0.21", optional = true }
+rtc = { version = "0.21", optional = true }
+axum = { version = "0.8", optional = true }
+bytes = { version = "1", optional = true }
+async-trait = { version = "0.1", optional = true }
+rand = { version = "0.10", optional = true }
+opus = { version = "0.4", optional = true }
+vigem-client = { version = "0.1", optional = true }
+windows-core = { version = "0.62", optional = true }
+
+[features]
+default = []
+# Juego remoto estilo Remote Play Together (WebRTC propio). Ver docs/juego-remoto.md.
+remote = [
+  "dep:webrtc", "dep:rtc", "dep:axum", "dep:bytes", "dep:async-trait", "dep:rand",
+  "dep:opus", "dep:vigem-client", "dep:windows-core", "dep:windows",
+]
+
+[target.'cfg(windows)'.dependencies.windows]
+version = "0.62"
+optional = true
+features = [
+  "Foundation",
+  "Graphics_Capture",
+  "Graphics_DirectX",
+  "Graphics_DirectX_Direct3D11",
+  "Win32_Foundation",
+  "Win32_Graphics_Direct3D",
+  "Win32_Graphics_Direct3D11",
+  "Win32_Graphics_Dxgi",
+  "Win32_Graphics_Dxgi_Common",
+  "Win32_Media_Audio",
+  "Win32_Media_MediaFoundation",
+  "Win32_Security",
+  "Win32_System_Com",
+  "Win32_System_Com_StructuredStorage",
+  "Win32_System_Variant",
+  "Win32_System_Threading",
+  "Win32_System_WinRT",
+  "Win32_System_WinRT_Direct3D11",
+  "Win32_System_WinRT_Graphics_Capture",
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_UI_WindowsAndMessaging",
+]
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+strip = true
