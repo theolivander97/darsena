@@ -3,6 +3,7 @@ mod i18n;
 mod auth;
 mod catalog;
 mod cloud;
+mod comunidad;
 mod covers;
 mod devs;
 mod discord;
@@ -11,6 +12,7 @@ mod downloads;
 mod github;
 mod hardware;
 mod info;
+mod inicio;
 mod http_multi;
 mod library;
 mod procs;
@@ -244,6 +246,13 @@ async fn check_catalog_update(state: S<'_>) -> R<catalog::CatalogUpdate> {
     // Sinopsis y tráilers: igual, si falla se siguen usando los que ya había.
     let _ = info::refresh(&dir).await;
     Ok(res)
+}
+
+/// Invitación al servidor de Discord de Dársena (se lee de discord.json, así que se puede cambiar sin versión nueva).
+#[tauri::command]
+async fn get_discord_link(state: S<'_>) -> R<String> {
+    let dir = state.store.data_dir().to_path_buf();
+    Ok(comunidad::invite(&dir).await)
 }
 
 /// Sinopsis, tráilers y destacados de los juegos (generado por tools/catalog/informacion.mjs).
@@ -629,6 +638,13 @@ fn set_discord_presence(state: S, value: bool) -> R<()> {
     if !value {
         discord::set(false, None);
     }
+    state.store.save_settings().map_err(err)
+}
+
+#[tauri::command]
+fn set_start_with_windows(state: S, value: bool) -> R<()> {
+    state.store.settings.lock().unwrap().start_with_windows = value;
+    inicio::apply(value);
     state.store.save_settings().map_err(err)
 }
 
@@ -1166,9 +1182,11 @@ macro_rules! app_handler {
             my_dev_ports,
             repo_default_branch,
             set_close_to_tray,
+            set_start_with_windows,
             set_discord_presence,
             list_mods,
             get_hardware,
+            get_discord_link,
             set_fullscreen,
             cloud_status,
             cloud_upload,
@@ -1321,8 +1339,12 @@ pub fn run() {
             tray::create(app.handle())?;
             // Abierta desde un acceso directo: se lanza el juego y Dársena se queda en la bandeja.
             // Si no, se enseña la ventana (empieza oculta para no parpadear en ese caso).
-            match tray::launch_arg(&std::env::args().collect::<Vec<_>>()) {
+            let args: Vec<String> = std::env::args().collect();
+            inicio::apply(app.state::<Arc<AppState>>().store.settings.lock().unwrap().start_with_windows);
+            match tray::launch_arg(&args) {
                 Some(id) => tray::launch_from_shortcut(app.handle(), &id),
+                // Al iniciar Windows, Dársena se queda en la bandeja sin abrir la ventana.
+                None if inicio::launched_by_windows(&args) => {}
                 None => tray::show_main(app.handle()),
             }
             Ok(())

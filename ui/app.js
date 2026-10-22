@@ -1638,6 +1638,7 @@ function renderSettings() {
   if (tab === "sources") renderSources();
   $("#language").value = state.settings.language || "";
   $("#close-to-tray").checked = state.settings.closeToTray !== false;
+  $("#start-with-windows").checked = state.settings.startWithWindows !== false;
   $("#discord-presence").checked = state.settings.discordPresence !== false;
   $("#show-nsfw").checked = !!state.settings.showNsfw;
   $("#cloud-saves").checked = state.settings.cloudSaves !== false;
@@ -1697,6 +1698,12 @@ $("#discord-presence").addEventListener("change", async (e) => {
   } catch { e.target.checked = !e.target.checked; }
 });
 
+$("#start-with-windows").addEventListener("change", async (e) => {
+  try {
+    await call("set_start_with_windows", { value: e.target.checked });
+    state.settings.startWithWindows = e.target.checked;
+  } catch { e.target.checked = !e.target.checked; }
+});
 $("#close-to-tray").addEventListener("change", async (e) => {
   try {
     await call("set_close_to_tray", { value: e.target.checked });

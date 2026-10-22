@@ -63,6 +63,9 @@ pub struct Settings {
     /// Al cerrar la ventana, Dársena sigue en la bandeja del sistema (como Steam).
     #[serde(default = "yes")]
     pub close_to_tray: bool,
+    /// Abrir Dársena (en la bandeja) al iniciar sesión en Windows.
+    #[serde(default = "yes")]
+    pub start_with_windows: bool,
     /// Al abrir Dársena, actualizar solos los ports instalados desde GitHub que tengan versión nueva.
     #[serde(default = "yes")]
     pub auto_update_ports: bool,
@@ -212,6 +215,7 @@ impl Store {
             favorites: Vec::new(),
             shelves: Vec::new(),
             close_to_tray: true,
+            start_with_windows: true,
             auto_update_ports: true,
             discord_presence: true,
             show_nsfw: false,

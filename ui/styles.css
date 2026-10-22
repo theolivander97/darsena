@@ -1130,3 +1130,7 @@ body.bp-on #toasts { z-index: 9500; }
 .bp-news-title { padding: 12px 14px; background: #1a232e; color: #fff; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bp-news.focus { transform: scale(1.04); }
 .bp-news.focus .bp-news-card { box-shadow: 0 0 0 4px #fff; }
+
+/* ---------- Botón de Discord ---------- */
+.discord-btn { display: inline-flex; align-items: center; gap: 8px; margin-right: 6px; padding: 6px 12px; border: 0; border-radius: var(--radius); background: #5865f2; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .12s, transform .12s; }
+.discord-btn:hover { background: #6b77f5; transform: translateY(-1px); }
