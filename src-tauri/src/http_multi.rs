@@ -6,8 +6,9 @@
 
 use anyhow::Context;
 use futures_util::StreamExt;
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::path::{Path, PathBuf};
+use std::future::Future;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::Mutex;
 use std::time::Duration;
@@ -18,6 +19,8 @@ pub struct HttpCtl {
     pub downloaded: AtomicU64,
     pub total: AtomicU64,
     pub paused: AtomicBool,
+    /// Retomar lo ya bajado de una ejecución anterior (Dársena se cerró a medias); si no, se empieza de cero.
+    pub resume: AtomicBool,
     /// Conexiones activas y mirrors en uso, para mostrarlo en Descargas.
     pub connections: AtomicUsize,
     pub mirrors: AtomicUsize,
@@ -32,6 +35,7 @@ impl HttpCtl {
             downloaded: AtomicU64::new(0),
             total: AtomicU64::new(0),
             paused: AtomicBool::new(false),
+            resume: AtomicBool::new(false),
             connections: AtomicUsize::new(0),
             mirrors: AtomicUsize::new(0),
             base: AtomicU64::new(0),
@@ -44,6 +48,21 @@ impl HttpCtl {
         let grand = self.grand.load(Ordering::Relaxed);
         self.total.store(if grand > 0 { grand } else { file_total }, Ordering::Relaxed);
         self.downloaded.store(self.base.load(Ordering::Relaxed) + resumed_at, Ordering::Relaxed);
+    }
+}
+
+/// Espera a que se cancele la descarga (se mira cada 150 ms).
+pub async fn wait_cancel(cancelled: &AtomicBool) {
+    while !cancelled.load(Ordering::SeqCst) {
+        tokio::time::sleep(Duration::from_millis(150)).await;
+    }
+}
+
+/// Ejecuta `fut` pero la suelta al momento si se cancela: una petición colgada no puede dejar el botón Cancelar sin efecto.
+pub async fn or_cancel<T>(cancelled: &AtomicBool, fut: impl Future<Output = T>) -> anyhow::Result<T> {
+    tokio::select! {
+        r = fut => Ok(r),
+        _ = wait_cancel(cancelled) => anyhow::bail!("cancelado"),
     }
 }
 
@@ -137,7 +156,7 @@ async fn download_to(urls: &[String], file_path: &Path, ctl: &HttpCtl, cancelled
     let client = client()?;
     let file_path = file_path.to_path_buf();
 
-    let probes = futures_util::future::join_all(urls.iter().map(|u| probe(&client, u))).await;
+    let probes = or_cancel(cancelled, futures_util::future::join_all(urls.iter().map(|u| probe(&client, u)))).await?;
     let mut ok: Vec<Probe> = Vec::new();
     let mut first_err = None;
     for p in probes {
@@ -161,14 +180,28 @@ async fn download_to(urls: &[String], file_path: &Path, ctl: &HttpCtl, cancelled
         return single(&client, &ok[0].url, &file_path, ctl, cancelled).await;
     }
 
-    ctl.begin_file(total, 0);
     ctl.mirrors.store(mirrors.len(), Ordering::Relaxed);
-    {
+    // Junto al archivo se apuntan los trozos terminados: si Dársena se cierra, se retoma sin empezar de cero.
+    let progress = PathBuf::from(format!("{}.progreso", file_path.display()));
+    let resumable = ctl.resume.load(Ordering::Relaxed) && std::fs::metadata(&file_path).map(|m| m.len() == total).unwrap_or(false);
+    let mut done: HashSet<u64> = HashSet::new();
+    if resumable {
+        if let Ok(text) = std::fs::read_to_string(&progress) {
+            done = text.lines().filter_map(|l| l.trim().parse().ok()).collect();
+        }
+    } else {
         let f = std::fs::File::create(&file_path).with_context(|| tr!("no se pudo crear {}", "couldn't create {}", file_path.display()))?;
         f.set_len(total)?;
+        let _ = std::fs::remove_file(&progress);
     }
+    let already: u64 = done.iter().map(|s| CHUNK.min(total.saturating_sub(*s))).sum();
+    ctl.begin_file(total, already);
     let queue: Mutex<VecDeque<(u64, u64)>> = Mutex::new(
-        (0..total).step_by(CHUNK as usize).map(|s| (s, (s + CHUNK).min(total) - 1)).collect(),
+        (0..total)
+            .step_by(CHUNK as usize)
+            .filter(|s| !done.contains(s))
+            .map(|s| (s, (s + CHUNK).min(total) - 1))
+            .collect(),
     );
     let chunks = queue.lock().unwrap().len();
     let per_mirror = CONN_PER_MIRROR.min((MAX_CONN / mirrors.len()).max(1));
@@ -178,7 +211,7 @@ async fn download_to(urls: &[String], file_path: &Path, ctl: &HttpCtl, cancelled
     let last_err: Mutex<Option<anyhow::Error>> = Mutex::new(None);
     let in_flight = AtomicUsize::new(0);
     futures_util::future::join_all(workers.into_iter().map(|url| {
-        worker(&client, url, &file_path, &queue, &in_flight, ctl, cancelled, &last_err)
+        worker(&client, url, &file_path, &progress, &queue, &in_flight, ctl, cancelled, &last_err)
     }))
     .await;
     ctl.connections.store(0, Ordering::Relaxed);
@@ -190,6 +223,7 @@ async fn download_to(urls: &[String], file_path: &Path, ctl: &HttpCtl, cancelled
         let e = last_err.lock().unwrap().take();
         return Err(e.unwrap_or_else(|| anyhow::anyhow!(tr!("error desconocido", "unknown error"))).context(tr!("los mirrors dejaron de responder", "the mirrors stopped responding")));
     }
+    let _ = std::fs::remove_file(&progress);
     Ok(())
 }
 
@@ -199,6 +233,7 @@ async fn worker(
     client: &reqwest::Client,
     url: &str,
     path: &Path,
+    progress: &Path,
     queue: &Mutex<VecDeque<(u64, u64)>>,
     // Trozos que otras conexiones tienen a medias: si fallan, vuelven a la cola y hay que seguir.
     in_flight: &AtomicUsize,
@@ -242,7 +277,15 @@ async fn worker(
             in_flight.fetch_sub(1, Ordering::SeqCst);
         }
         match r {
-            Ok(()) => fails = 0,
+            Ok(()) => {
+                fails = 0;
+                if start + written > end {
+                    use std::io::Write;
+                    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(progress) {
+                        let _ = writeln!(f, "{start}");
+                    }
+                }
+            }
             Err(e) => {
                 fails += 1;
                 *last_err.lock().unwrap() = Some(e);
@@ -267,17 +310,17 @@ async fn fetch_range(
     cancelled: &AtomicBool,
     written: &mut u64,
 ) -> anyhow::Result<()> {
-    let resp = client
-        .get(url)
-        .header(reqwest::header::RANGE, format!("bytes={start}-{end}"))
-        .send()
-        .await?
-        .error_for_status()?;
+    let resp = or_cancel(
+        cancelled,
+        client.get(url).header(reqwest::header::RANGE, format!("bytes={start}-{end}")).send(),
+    )
+    .await??
+    .error_for_status()?;
     anyhow::ensure!(resp.status() == reqwest::StatusCode::PARTIAL_CONTENT, tr!("el mirror dejó de admitir descargas por trozos", "the mirror stopped supporting ranged downloads"));
     let mut file = tokio::fs::OpenOptions::new().write(true).open(path).await?;
     file.seek(std::io::SeekFrom::Start(start)).await?;
     let mut stream = resp.bytes_stream();
-    while let Some(chunk) = stream.next().await {
+    while let Some(chunk) = or_cancel(cancelled, stream.next()).await? {
         let chunk = chunk.context(tr!("conexión interrumpida", "connection interrupted"))?;
         // Nunca escribir fuera del trozo pedido (un servidor podría mandar de más).
         let room = (end + 1 - start - *written) as usize;
@@ -290,11 +333,17 @@ async fn fetch_range(
         }
     }
     file.flush().await?;
+    if *written > end - start {
+        file.sync_data().await?;
+    }
     Ok(())
 }
 
 /// Una sola conexión, reanudando con Range tras una pausa si el servidor lo admite.
 async fn single(client: &reqwest::Client, uri: &str, file_path: &Path, ctl: &HttpCtl, cancelled: &AtomicBool) -> anyhow::Result<()> {
+    if !ctl.resume.load(Ordering::Relaxed) {
+        let _ = tokio::fs::remove_file(file_path).await;
+    }
     'outer: loop {
         while ctl.paused.load(Ordering::SeqCst) {
             if cancelled.load(Ordering::SeqCst) {
@@ -307,7 +356,7 @@ async fn single(client: &reqwest::Client, uri: &str, file_path: &Path, ctl: &Htt
         if have > 0 {
             req = req.header(reqwest::header::RANGE, format!("bytes={have}-"));
         }
-        let resp = req.send().await?.error_for_status()?;
+        let resp = or_cancel(cancelled, req.send()).await??.error_for_status()?;
         let resumed = resp.status() == reqwest::StatusCode::PARTIAL_CONTENT;
         let base = if resumed { have } else { 0 };
         ctl.begin_file(base + resp.content_length().unwrap_or(0), base);
@@ -318,7 +367,7 @@ async fn single(client: &reqwest::Client, uri: &str, file_path: &Path, ctl: &Htt
             tokio::fs::File::create(file_path).await?
         };
         let mut stream = resp.bytes_stream();
-        while let Some(chunk) = stream.next().await {
+        while let Some(chunk) = or_cancel(cancelled, stream.next()).await? {
             let chunk = chunk.context(tr!("conexión interrumpida", "connection interrupted"))?;
             file.write_all(&chunk).await?;
             ctl.downloaded.fetch_add(chunk.len() as u64, Ordering::Relaxed);

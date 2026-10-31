@@ -1,7 +1,7 @@
 //! Gestor de descargas: torrents (librqbit) y descargas directas multiconexión (http_multi),
 //! a la vez cuando una fuente da ambos; pausa/reanudar/cancelar, extracción de .zip y alta en la biblioteca.
 
-use crate::catalog::CatalogGame;
+use crate::catalog::{self, CatalogGame};
 use crate::github;
 use crate::http_multi::{self, HttpCtl};
 use crate::webseed;
@@ -14,7 +14,7 @@ use librqbit::{
     AddTorrent, AddTorrentOptions, ListenerMode, ListenerOptions, ManagedTorrent, Session,
     SessionOptions, TorrentStatsState,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 use std::path::{Path, PathBuf};
@@ -30,6 +30,8 @@ pub enum Status {
     Downloading,
     Paused,
     Extracting,
+    /// Se pulsó Cancelar y se está parando y limpiando (la interfaz lo enseña al momento).
+    Cancelling,
     Completed,
     Error,
 }
@@ -51,6 +53,54 @@ struct Task {
     error: Option<String>,
     engine: Engine,
     cancelled: Arc<AtomicBool>,
+    /// Descarga que quedó a medias al cerrar Dársena: se enseña en pausa y se retoma al pulsar Reanudar.
+    restore: Option<Pending>,
+}
+
+/// Una descarga en curso, apuntada en disco (descargas-pendientes.json) para retomarla si Dársena se cierra
+/// o el PC se apaga. Solo guarda qué descargar; las opciones se vuelven a buscar en el catálogo y las fuentes.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Pending {
+    /// "install" (un port), "update" (actualizar un port) o "data" (datos de juego de una fuente).
+    kind: String,
+    id: String,
+    #[serde(default)]
+    source: Option<(String, usize)>,
+    #[serde(default)]
+    install_root: Option<String>,
+    #[serde(default)]
+    then_data: Option<(String, usize, Option<bool>)>,
+    #[serde(default)]
+    extract: Option<bool>,
+}
+
+impl Pending {
+    fn key(&self) -> String {
+        if self.kind == "data" { data_key(&self.id) } else { self.id.clone() }
+    }
+}
+
+const PENDING_FILE: &str = "descargas-pendientes.json";
+
+fn save_pending(state: &AppState) {
+    let list = state.dl.pending.lock().unwrap().clone();
+    let path = state.store.data_dir().join(PENDING_FILE);
+    let _ = std::fs::write(path, serde_json::to_vec_pretty(&list).unwrap_or_default());
+}
+
+fn add_pending(state: &AppState, p: Pending) {
+    {
+        let mut list = state.dl.pending.lock().unwrap();
+        let key = p.key();
+        list.retain(|x| x.key() != key);
+        list.push(p);
+    }
+    save_pending(state);
+}
+
+fn drop_pending(state: &AppState, key: &str) {
+    state.dl.pending.lock().unwrap().retain(|x| x.key() != key);
+    save_pending(state);
 }
 
 #[derive(Serialize, Clone)]
@@ -89,6 +139,8 @@ pub struct DownloadManager {
     speed: Mutex<HashMap<String, (u64, Instant, f64)>>,
     /// Ports que se están compartiendo en segundo plano: id del port -> torrent.
     seeding: Mutex<HashMap<String, Arc<ManagedTorrent>>>,
+    /// Descargas en curso apuntadas en disco (ver `Pending`).
+    pending: Mutex<Vec<Pending>>,
 }
 
 /// Lo que se está compartiendo, para Ajustes.
@@ -186,6 +238,10 @@ impl DownloadManager {
     fn update<F: FnOnce(&mut Task)>(&self, key: &str, f: F) {
         if let Some(t) = self.tasks.lock().unwrap().get_mut(key) {
             f(t);
+            // Tras Cancelar, ningún paso que siga corriendo debe devolver la tarea a «Descargando».
+            if t.cancelled.load(Ordering::SeqCst) && t.status != Status::Completed && t.status != Status::Error {
+                t.status = Status::Cancelling;
+            }
         }
     }
 
@@ -282,18 +338,153 @@ impl DownloadManager {
         Ok(())
     }
 
-    /// Cancela una descarga en curso o quita de la lista una terminada/fallida.
-    pub fn cancel(&self, key: &str) {
-        let mut tasks = self.tasks.lock().unwrap();
-        if let Some(t) = tasks.get(key) {
-            if matches!(t.status, Status::Completed | Status::Error) {
+}
+
+/// Cancela una descarga: se para al momento (aunque esté conectando o en pausa), se borra lo bajado y se quita
+/// de la lista. Si ya estaba terminada o fallida, solo se quita de la lista.
+pub fn cancel(state: &Arc<AppState>, key: &str) {
+    let mut tasks = state.dl.tasks.lock().unwrap();
+    let Some(t) = tasks.get_mut(key) else { return };
+    match t.status {
+        Status::Completed | Status::Error => {
+            tasks.remove(key);
+        }
+        // Ya está instalando: pararlo a medias dejaría el juego a medias.
+        Status::Extracting => {}
+        _ => {
+            if let Some(p) = t.restore.take() {
+                // Descarga restaurada en pausa: no hay nada corriendo, se limpia aquí.
                 tasks.remove(key);
+                drop(tasks);
+                drop_pending(state, key);
+                let state = state.clone();
+                tauri::async_runtime::spawn(async move { discard(&state, &p).await });
             } else {
                 // El bucle de descarga ve la bandera, limpia los archivos y quita la tarea.
                 t.cancelled.store(true, Ordering::SeqCst);
+                t.status = Status::Cancelling;
             }
         }
     }
+}
+
+/// Borra lo que una descarga restaurada había dejado a medias.
+async fn discard(state: &Arc<AppState>, p: &Pending) {
+    match p.kind.as_str() {
+        "install" => {
+            if let (Some(game), Some(root)) = (catalog::get(&p.id), &p.install_root) {
+                let dest = port_dir(Path::new(root), game);
+                let _ = tokio::fs::remove_dir_all(seed_dir_of(&dest, game)).await;
+                let _ = tokio::fs::remove_dir_all(&dest).await;
+            }
+        }
+        "data" => {
+            let installed = state.store.library.lock().unwrap().get(&p.id).cloned();
+            if let Some(g) = installed {
+                let _ = tokio::fs::remove_dir_all(data_dir_of(&g).join(".descargando")).await;
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Al abrir Dársena: las descargas que quedaron a medias vuelven a la lista, en pausa.
+pub fn restore(state: &Arc<AppState>) {
+    let path = state.store.data_dir().join(PENDING_FILE);
+    let Ok(text) = std::fs::read_to_string(&path) else { return };
+    let Ok(list) = serde_json::from_str::<Vec<Pending>>(&text) else { return };
+    let mut kept = Vec::new();
+    {
+        let mut tasks = state.dl.tasks.lock().unwrap();
+        for p in list {
+            let installed = state.store.library.lock().unwrap().get(&p.id).cloned();
+            let title = match p.kind.as_str() {
+                // Un port que se acabó de instalar entre medias ya no tiene nada pendiente.
+                "install" if installed.is_some() => continue,
+                "install" | "update" => catalog::get(&p.id).map(|g| g.title.clone()),
+                "data" => installed.map(|g| tr!("Datos · {}", "Data · {}", g.title)),
+                _ => None,
+            };
+            let Some(title) = title else { continue };
+            tasks.insert(
+                p.key(),
+                Task {
+                    title,
+                    kind: LinkKind::Http,
+                    status: Status::Paused,
+                    error: None,
+                    engine: Engine::Pending,
+                    cancelled: Arc::new(AtomicBool::new(false)),
+                    restore: Some(p.clone()),
+                },
+            );
+            kept.push(p);
+        }
+    }
+    *state.dl.pending.lock().unwrap() = kept;
+    save_pending(state);
+}
+
+/// Si la descarga es una restaurada en pausa, la saca de la lista y devuelve lo necesario para volver a lanzarla.
+pub fn take_restore(state: &Arc<AppState>, key: &str) -> Option<Pending> {
+    let mut tasks = state.dl.tasks.lock().unwrap();
+    if tasks.get(key).is_some_and(|t| t.restore.is_some()) {
+        return tasks.remove(key).and_then(|t| t.restore);
+    }
+    None
+}
+
+/// Vuelve a lanzar una descarga restaurada retomando lo que ya había en disco.
+pub fn restart(app: AppHandle, state: Arc<AppState>, p: Pending) -> anyhow::Result<()> {
+    let res = (|| match p.kind.as_str() {
+        "install" => {
+            let game = catalog::get(&p.id).context(tr!("juego no encontrado en el catálogo", "game not found in the catalog"))?;
+            let choice = match &p.source {
+                None => Choice::Official,
+                Some((url, index)) => {
+                    let opt = state
+                        .store
+                        .source_options()
+                        .remove(p.id.as_str())
+                        .unwrap_or_default()
+                        .into_iter()
+                        .find(|o| &o.source_url == url && o.index == *index)
+                        .context(tr!("esa opción de descarga ya no existe; actualiza las fuentes", "that download option no longer exists; refresh your sources"))?;
+                    Choice::Source(opt)
+                }
+            };
+            let root = PathBuf::from(p.install_root.clone().context("sin carpeta de instalación")?);
+            start(app.clone(), state.clone(), game, choice, root, p.then_data.clone(), true)
+        }
+        "update" => {
+            let game = catalog::get(&p.id).context(tr!("juego no encontrado en el catálogo", "game not found in the catalog"))?;
+            start_update(app.clone(), state.clone(), game)
+        }
+        "data" => {
+            let installed = state
+                .store
+                .library
+                .lock()
+                .unwrap()
+                .get(&p.id)
+                .cloned()
+                .context(tr!("el juego no está instalado", "the game isn't installed"))?;
+            let (url, index) = p.source.clone().context("sin fuente")?;
+            let mut opt = state
+                .store
+                .data_options(&p.id)
+                .into_iter()
+                .find(|o| o.source_url == url && o.index == index)
+                .context(tr!("esos datos ya no están en tus fuentes; actualízalas", "that data is no longer in your sources; refresh them"))?;
+            apply_extract(&mut opt, p.extract);
+            start_data(app.clone(), state.clone(), installed, opt, true)
+        }
+        other => anyhow::bail!("descarga desconocida: {other}"),
+    })();
+    if res.is_err() {
+        drop_pending(&state, &p.key());
+    }
+    res
 }
 
 /// Emite el estado de las descargas a la UI dos veces por segundo.
@@ -326,6 +517,8 @@ pub fn start(
     install_root: PathBuf,
     // Datos de tus fuentes (url de la fuente, índice) a descargar en cuanto termine el port.
     then_data: Option<(String, usize, Option<bool>)>,
+    // Retomar lo que ya había en disco de una ejecución anterior.
+    resume: bool,
 ) -> anyhow::Result<()> {
     if state.dl.is_active(&game.id) {
         anyhow::bail!(tr!("este juego ya se está descargando", "this game is already downloading"));
@@ -345,12 +538,28 @@ pub fn start(
             error: None,
             engine: Engine::Pending,
             cancelled: cancelled.clone(),
+            restore: None,
+        },
+    );
+    add_pending(
+        &state,
+        Pending {
+            kind: "install".into(),
+            id: game.id.clone(),
+            source: match &choice {
+                Choice::Official => None,
+                Choice::Source(o) => Some((o.source_url.clone(), o.index)),
+            },
+            install_root: Some(install_root.to_string_lossy().into_owned()),
+            then_data: then_data.clone(),
+            extract: None,
         },
     );
 
     tauri::async_runtime::spawn(async move {
         let key = game.id.clone();
-        let result = run(&state, game, choice, &dest, &cancelled).await;
+        let result = run(&state, game, choice, &dest, &cancelled, resume).await;
+        drop_pending(&state, &key);
         if cancelled.load(Ordering::SeqCst) {
             let _ = tokio::fs::remove_dir_all(&dest).await;
             let _ = tokio::fs::remove_dir_all(seed_dir_of(&dest, game)).await;
@@ -373,7 +582,7 @@ pub fn start(
                             o
                         });
                     if let (Some(installed), Some(opt)) = (installed, opt) {
-                        if let Err(e) = start_data(app.clone(), state.clone(), installed, opt) {
+                        if let Err(e) = start_data(app.clone(), state.clone(), installed, opt, false) {
                             state.dl.update(&key, |t| t.error = Some(tr!("los datos no se pudieron descargar: {e:#}", "the data couldn't be downloaded: {e:#}")));
                         }
                     }
@@ -394,13 +603,14 @@ async fn run(
     choice: Choice,
     dest: &Path,
     cancelled: &Arc<AtomicBool>,
+    resume: bool,
 ) -> anyhow::Result<()> {
     let key = game.id.as_str();
     let mut expected_sha256 = None;
     let (links, origin, version) = match choice {
         Choice::Official => {
             let token = state.store.settings.lock().unwrap().github_token.clone();
-            let build = github::latest_build(game, token.as_deref()).await?;
+            let build = http_multi::or_cancel(cancelled, github::latest_build(game, token.as_deref())).await??;
             expected_sha256 = build.sha256.clone().map(|h| (crate::http_multi::file_name_from_url(&build.url), h));
             let link = DownloadLink { kind: LinkKind::Http, uri: build.url };
             (vec![link], "GitHub oficial".to_string(), Some(build.version))
@@ -411,9 +621,11 @@ async fn run(
     // Si se comparte, el torrent baja a .compartido/<port> (se siembra desde ahí) y se copia al port.
     let share = state.store.settings.lock().unwrap().share_downloads;
     let seed_dir = seed_dir_of(dest, game);
-    state.dl.stop_seeding(key).await;
-    let _ = tokio::fs::remove_dir_all(&seed_dir).await;
-    let seeding = fetch(state, key, &links, dest, cancelled, share.then_some(seed_dir.as_path())).await?;
+    if !resume {
+        state.dl.stop_seeding(key).await;
+        let _ = tokio::fs::remove_dir_all(&seed_dir).await;
+    }
+    let seeding = fetch(state, key, &links, dest, cancelled, share.then_some(seed_dir.as_path()), resume).await?;
     verify_sha256(dest, expected_sha256).await?;
     // Un torrent suele traer una carpeta raíz (y archive.org, archivos de metadatos): se deja el port suelto.
     let d = dest.to_path_buf();
@@ -512,14 +724,17 @@ pub fn start_update(app: AppHandle, state: Arc<AppState>, game: &'static Catalog
             error: None,
             engine: Engine::Pending,
             cancelled: cancelled.clone(),
+            restore: None,
         },
     );
+    add_pending(&state, Pending { kind: "update".into(), id: game.id.clone(), source: None, install_root: None, then_data: None, extract: None });
     tauri::async_runtime::spawn(async move {
         let key = game.id.clone();
         let port = PathBuf::from(&installed.path);
         let name = port.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
         let staging = port.with_file_name(format!("{name}.actualizacion"));
         let result = run_update(&state, game, &installed, &port, &staging, &cancelled).await;
+        drop_pending(&state, &key);
         let _ = tokio::fs::remove_dir_all(&staging).await;
         if cancelled.load(Ordering::SeqCst) {
             state.dl.tasks.lock().unwrap().remove(&key);
@@ -549,11 +764,11 @@ async fn run_update(
 ) -> anyhow::Result<()> {
     let key = game.id.as_str();
     let token = state.store.settings.lock().unwrap().github_token.clone();
-    let build = github::latest_build(game, token.as_deref()).await?;
+    let build = http_multi::or_cancel(cancelled, github::latest_build(game, token.as_deref())).await??;
     let expected = build.sha256.clone().map(|h| (crate::http_multi::file_name_from_url(&build.url), h));
     let links = vec![DownloadLink { kind: LinkKind::Http, uri: build.url.clone() }];
     let _ = tokio::fs::remove_dir_all(staging).await;
-    fetch(state, key, &links, staging, cancelled, None).await?;
+    fetch(state, key, &links, staging, cancelled, None, false).await?;
     verify_sha256(staging, expected).await?;
     let s = staging.to_path_buf();
     let _ = tokio::task::spawn_blocking(move || webseed::tidy_layout(&s)).await;
@@ -605,6 +820,8 @@ async fn run_torrent(
         }),
     );
     // Un magnet primero tiene que conseguir la información del torrent de algún par.
+    // Cancelar debe funcionar también mientras el magnet busca su información.
+    let add = http_multi::or_cancel(cancelled, add);
     let added = if has_fallback {
         tokio::time::timeout(TORRENT_STALL, add)
             .await
@@ -612,7 +829,7 @@ async fn run_torrent(
     } else {
         add.await
     };
-    let handle = added
+    let handle = added?
         .context(tr!("no se pudo añadir el torrent", "couldn't add the torrent"))?
         .into_handle()
         .context(tr!("respuesta inesperada del motor torrent", "unexpected response from the torrent engine"))?;
@@ -669,6 +886,7 @@ async fn fetch(
     cancelled: &AtomicBool,
     // Carpeta desde la que compartir si lo baja un torrent (None = no compartir).
     seed_dir: Option<&Path>,
+    resume: bool,
 ) -> anyhow::Result<Option<Arc<ManagedTorrent>>> {
     let torrents: Vec<&DownloadLink> = links.iter().filter(|l| l.kind != LinkKind::Http).collect();
     let https: Vec<String> = links.iter().filter(|l| l.kind == LinkKind::Http).map(|l| l.uri.clone()).collect();
@@ -678,7 +896,7 @@ async fn fetch(
     match (torrents.is_empty(), https.is_empty()) {
         (true, true) => anyhow::bail!(tr!("la opción no tiene enlaces", "this option has no links")),
         (false, true) if plan.is_some() => {
-            race(state, key, &torrents, HttpSide::WebSeed(plan.unwrap()), dest, cancelled, seed_dir).await
+            race(state, key, &torrents, HttpSide::WebSeed(plan.unwrap()), dest, cancelled, seed_dir, resume).await
         }
         (false, true) => match seed_dir {
             Some(sd) => {
@@ -690,6 +908,7 @@ async fn fetch(
         },
         (true, false) => {
             let ctl = Arc::new(HttpCtl::new());
+            ctl.resume.store(resume, Ordering::Relaxed);
             state.dl.update(key, |t| {
                 t.kind = LinkKind::Http;
                 t.engine = Engine::Http(ctl.clone());
@@ -697,7 +916,7 @@ async fn fetch(
             });
             http_multi::download(&https, dest, &ctl, cancelled).await.map(|_| None)
         }
-        (false, false) => race(state, key, &torrents, HttpSide::Mirrors(&https), dest, cancelled, seed_dir).await,
+        (false, false) => race(state, key, &torrents, HttpSide::Mirrors(&https), dest, cancelled, seed_dir, resume).await,
     }
 }
 
@@ -821,6 +1040,7 @@ async fn race(
     dest: &Path,
     cancelled: &AtomicBool,
     seed_dir: Option<&Path>,
+    resume: bool,
 ) -> anyhow::Result<Option<Arc<ManagedTorrent>>> {
     // Si se comparte, el torrent baja directamente a la carpeta compartida.
     let tdir = seed_dir.map(Path::to_path_buf).unwrap_or_else(|| dest.join(".torrent"));
@@ -887,6 +1107,7 @@ async fn race(
 
     // Fase 2: descarga directa, ya sola.
     let ctl = Arc::new(HttpCtl::new());
+    ctl.resume.store(resume, Ordering::Relaxed);
     state.dl.update(key, |t| {
         t.kind = LinkKind::Http;
         t.engine = Engine::Http(ctl.clone());
@@ -1075,7 +1296,7 @@ pub fn data_dir_of(installed: &InstalledGame) -> PathBuf {
 }
 
 /// Descarga datos de juego de una fuente y los coloca en la carpeta Datos del juego.
-pub fn start_data(app: AppHandle, state: Arc<AppState>, installed: InstalledGame, opt: DataOption) -> anyhow::Result<()> {
+pub fn start_data(app: AppHandle, state: Arc<AppState>, installed: InstalledGame, opt: DataOption, resume: bool) -> anyhow::Result<()> {
     let key = data_key(&installed.id);
     if state.dl.is_active(&key) {
         anyhow::bail!(tr!("ya se están descargando datos para este juego", "data for this game is already downloading"));
@@ -1094,12 +1315,25 @@ pub fn start_data(app: AppHandle, state: Arc<AppState>, installed: InstalledGame
             error: None,
             engine: Engine::Pending,
             cancelled: cancelled.clone(),
+            restore: None,
+        },
+    );
+    add_pending(
+        &state,
+        Pending {
+            kind: "data".into(),
+            id: installed.id.clone(),
+            source: Some((opt.source_url.clone(), opt.index)),
+            install_root: None,
+            then_data: None,
+            extract: Some(opt.format == DataFormat::Zip),
         },
     );
 
     tauri::async_runtime::spawn(async move {
         let tmp = root.join(".descargando");
-        let result = run_data(&state, &key, &opt, &tmp, &root, &target, &cancelled).await;
+        let result = run_data(&state, &key, &opt, &tmp, &root, &target, &cancelled, resume).await;
+        drop_pending(&state, &key);
         let _ = tokio::fs::remove_dir_all(&tmp).await;
         if cancelled.load(Ordering::SeqCst) {
             state.dl.tasks.lock().unwrap().remove(&key);
@@ -1137,9 +1371,12 @@ async fn run_data(
     root: &Path,
     target: &Path,
     cancelled: &Arc<AtomicBool>,
+    resume: bool,
 ) -> anyhow::Result<()> {
-    let _ = tokio::fs::remove_dir_all(tmp).await;
-    fetch(state, key, &opt.links, tmp, cancelled, None).await?;
+    if !resume {
+        let _ = tokio::fs::remove_dir_all(tmp).await;
+    }
+    fetch(state, key, &opt.links, tmp, cancelled, None, resume).await?;
     state.dl.update(key, |t| t.status = Status::Extracting);
     let (tmp, root, target, opt) = (tmp.to_path_buf(), root.to_path_buf(), target.to_path_buf(), opt.clone());
     tokio::task::spawn_blocking(move || place_data(&tmp, &root, &target, &opt)).await?

@@ -401,6 +401,7 @@ const EN = {
   "Descargas": "Downloads",
   "No hay descargas": "No downloads",
   "Conectando…": "Connecting…",
+  "Cancelando…": "Cancelling…",
   "Descargando": "Downloading",
   "En pausa": "Paused",
   "Extrayendo e instalando…": "Extracting and installing…",

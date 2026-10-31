@@ -887,7 +887,7 @@ fn install_game(
     );
     std::fs::create_dir_all(&root).map_err(|e| tr!("no se pudo crear {}: {e}", "couldn't create {}: {e}", root.display()))?;
     let then_data = data.map(|d| (d.source_url, d.index, d.extract));
-    downloads::start(app, state.inner().clone(), game, choice, root, then_data).map_err(err)
+    downloads::start(app, state.inner().clone(), game, choice, root, then_data, false).map_err(err)
 }
 
 /// Abre la carpeta Datos del juego de un port instalado (la crea si aún no existe).
@@ -923,7 +923,7 @@ fn install_data(app: AppHandle, state: S, id: String, source_url: String, index:
         .find(|o| o.source_url == source_url && o.index == index)
         .ok_or(tr!("esos datos ya no están en tus fuentes; actualízalas", "that data is no longer in your sources; refresh them"))?;
     downloads::apply_extract(&mut opt, extract);
-    downloads::start_data(app, state.inner().clone(), installed, opt).map_err(err)
+    downloads::start_data(app, state.inner().clone(), installed, opt, false).map_err(err)
 }
 
 #[tauri::command]
@@ -937,13 +937,17 @@ async fn pause_download(state: S<'_>, id: String) -> R<()> {
 }
 
 #[tauri::command]
-async fn resume_download(state: S<'_>, id: String) -> R<()> {
+async fn resume_download(app: AppHandle, state: S<'_>, id: String) -> R<()> {
+    // Una descarga que quedó a medias al cerrar Dársena se vuelve a lanzar retomando lo que había en disco.
+    if let Some(pending) = downloads::take_restore(state.inner(), &id) {
+        return downloads::restart(app, state.inner().clone(), pending).map_err(err);
+    }
     state.dl.resume(&id).await.map_err(err)
 }
 
 #[tauri::command]
 fn cancel_download(state: S, id: String) {
-    state.dl.cancel(&id);
+    downloads::cancel(state.inner(), &id);
 }
 
 // ---------- Sesión de GitHub ----------
@@ -1330,6 +1334,8 @@ pub fn run() {
                     let _ = std::fs::write(std::env::temp_dir().join("darsena_remote_test.txt"), msg);
                 });
             }
+            // Las descargas que quedaron a medias la última vez vuelven a la lista, en pausa.
+            downloads::restore(&state);
             // Vuelve a compartir lo que se bajó por torrent (en segundo plano: no retrasa el arranque).
             tauri::async_runtime::spawn(downloads::resume_seeding(state.clone()));
             downloads::spawn_ticker(app.handle().clone(), state);

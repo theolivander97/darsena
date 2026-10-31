@@ -1397,7 +1397,7 @@ document.addEventListener("change", (e) => {
 
 const STATUS_TEXT = {
   starting: "Conectando…", downloading: "Descargando", paused: "En pausa",
-  extracting: "Extrayendo e instalando…", completed: "Completado", error: "Error",
+  extracting: "Extrayendo e instalando…", cancelling: "Cancelando…", completed: "Completado", error: "Error",
 };
 // Lo que Rust describe en español (la vía de descarga, el prefijo de los datos) se traduce aquí.
 const viaText = (v) => (LANG() === "en" ? v.replace(/(\d+) conexiones/, "$1 connections") : v);
@@ -1429,7 +1429,7 @@ setInterval(async () => {
 }, 4000);
 
 const fmtRate = (bps) => `${fmtBytes(bps) === "—" ? "0 B" : fmtBytes(bps)}/s`;
-const isActive = (d) => ["starting", "downloading", "extracting"].includes(d.status);
+const isActive = (d) => ["starting", "downloading", "extracting", "cancelling"].includes(d.status);
 const gameOfTask = (d) => state.games.get(gameOfPort(d.key.replace(/^data:/, "")));
 
 function dlInfo(d) {
@@ -1447,6 +1447,7 @@ function dlActions(d) {
   const isData = d.key.startsWith("data:");
   if (d.status === "completed") return `${isData ? "" : `<button class="btn primary" data-play="${k}">${icon("play")}${t("Jugar")}</button>`}<button class="btn ghost" data-cancel="${k}" title="${t("Quitar de la lista")}">${icon("close")}</button>`;
   if (d.status === "error") return `<button class="btn ghost" data-cancel="${k}" title="${t("Quitar de la lista")}">${icon("close")}</button>`;
+  if (d.status === "cancelling") return `<button class="btn" disabled>${icon("pause")}</button><button class="btn danger" disabled>${icon("close")}</button>`;
   return `${d.status === "paused" ? `<button class="btn" data-resume="${k}" title="${t("Reanudar")}">${icon("play")}</button>`
       : `<button class="btn" data-pause="${k}" title="${t("Pausar")}" ${d.status !== "downloading" ? "disabled" : ""}>${icon("pause")}</button>`}
     <button class="btn danger" data-cancel="${k}" title="${t("Cancelar")}" ${d.status === "extracting" ? "disabled" : ""}>${icon("close")}</button>`;
@@ -1463,12 +1464,27 @@ function dlRowHtml(d) {
     <div class="dl-thumb" style="${gm ? coverStyle(gm) : ""}" ${gm ? `data-lib="${esc(gm.id)}"` : ""}>${art ? `<img src="${art}" alt="" onerror="this.remove()">` : ""}</div>
     <div class="dl-body">
       <div class="dl-title">${esc(taskTitle(d.title))}</div>
-      <div class="bar ${barClass(d)}"><div style="width:${d.status === "completed" ? 100 : pct}%"></div></div>
-      <div class="dl-info">${dlInfo(d)}</div>
+      <div class="bar ${barClass(d)}"><div data-dl-fill="${esc(d.key)}" style="width:${d.status === "completed" ? 100 : pct}%"></div></div>
+      <div class="dl-info" data-dl-info="${esc(d.key)}">${dlInfo(d)}</div>
       ${d.error ? `<div class="err">${esc(d.error)}</div>` : ""}
     </div>
     <div class="dl-actions">${dlActions(d)}</div>
   </div>`;
+}
+
+// Al repintar la lista entera cada medio segundo los botones se sustituían entre pulsar y soltar el ratón y el clic
+// se perdía (Cancelar «a veces no hacía nada»). Si solo cambian los números, se actualizan en su sitio.
+let dlSignature = "";
+function dlUpdateInPlace(list) {
+  for (const d of state.downloads) {
+    for (const el of list.querySelectorAll("[data-dl-info]")) {
+      if (el.dataset.dlInfo === d.key) el.textContent = dlInfo(d);
+    }
+    const pct = d.status === "completed" ? 100 : d.total ? (d.downloaded / d.total) * 100 : 0;
+    for (const el of list.querySelectorAll("[data-dl-fill]")) {
+      if (el.dataset.dlFill === d.key) el.style.width = `${pct}%`;
+    }
+  }
 }
 
 function renderDownloads() {
@@ -1476,6 +1492,9 @@ function renderDownloads() {
   if (state.view !== "downloads") return;
   const list = $("#dl-list");
   const all = state.downloads;
+  const sig = all.map((d) => `${d.key}|${d.status}|${!!d.total}|${d.error || ""}|${gameOfTask(d)?.id || ""}`).join(";");
+  if (sig === dlSignature && list.querySelector(".dl-head")) { dlUpdateInPlace(list); renderDlHeaderStats(); return; }
+  dlSignature = sig;
   const active = all.filter(isActive);
   const current = active.find((d) => d.status === "downloading") || active[0] || all.find((d) => d.status === "paused");
   const paused = all.filter((d) => d.status === "paused" && d !== current);
@@ -1491,8 +1510,8 @@ function renderDownloads() {
     <canvas id="dl-graph"></canvas>
     <div class="dl-head-main">${current ? `
       <div class="dl-head-title" ${gm ? `data-lib="${esc(gm.id)}"` : ""}>${esc(taskTitle(current.title))}</div>
-      <div class="dl-head-status">${dlInfo(current)}</div>
-      <div class="bar ${barClass(current)}"><div style="width:${pct}%"></div></div>
+      <div class="dl-head-status" data-dl-info="${esc(current.key)}">${dlInfo(current)}</div>
+      <div class="bar ${barClass(current)}"><div data-dl-fill="${esc(current.key)}" style="width:${pct}%"></div></div>
       <div class="dl-actions">${dlActions(current)}</div>`
       : `<div class="dl-idle"><img class="empty-mark" src="logo.svg" alt=""><div class="dl-head-title muted">${t("No hay ninguna descarga en curso")}</div></div>`}
     </div>
@@ -1574,9 +1593,14 @@ function renderMini() {
   const speed = active.reduce((a, d) => a + (d.speedBps || 0), 0);
   const first = active[0];
   const label = active.length > 1 ? t("{n} descargas", { n: active.length }) : taskTitle(first.title);
+  const text = `<b>${esc(label)}</b> · ${total ? `${Math.floor((down / total) * 100)}%` : t(STATUS_TEXT[first.status])} · ${fmtRate(speed)}`;
+  const width = total ? (down / total) * 100 : 0;
+  // El botón no se vuelve a crear a cada muestra: solo cambian su texto y su barra.
+  const txt = el.querySelector(".dl-bar-text"), fill = el.querySelector(".bar > span");
+  if (el.classList.contains("busy") && txt && fill) { txt.innerHTML = text; fill.style.width = `${width}%`; return; }
   el.classList.add("busy");
-  el.innerHTML = `${icon("downloads")}<span class="dl-bar-text"><b>${esc(label)}</b> · ${total ? `${Math.floor((down / total) * 100)}%` : t(STATUS_TEXT[first.status])} · ${fmtRate(speed)}</span>
-    <span class="bar"><span style="width:${total ? (down / total) * 100 : 0}%"></span></span>`;
+  el.innerHTML = `${icon("downloads")}<span class="dl-bar-text">${text}</span>
+    <span class="bar"><span style="width:${width}%"></span></span>`;
 }
 
 // ---------- Fuentes ----------
@@ -1951,7 +1975,10 @@ listen("downloads", (ev) => {
   renderMini();
   if (state.view === "library") {
     const bar = $("#lib-action");
-    if (bar && state.libPort) bar.firstElementChild.outerHTML = actionButtonHtml(state.libPort);
+    if (bar && state.libPort) {
+      const html = actionButtonHtml(state.libPort);
+      if (bar.dataset.h !== html) { bar.firstElementChild.outerHTML = html; bar.dataset.h = html; }
+    }
   }
 });
 
