@@ -5,7 +5,7 @@ use crate::AppState;
 use anyhow::Context;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
 pub fn launch(app: AppHandle, state: Arc<AppState>, key: &str) -> anyhow::Result<()> {
     let game = state
@@ -16,6 +16,10 @@ pub fn launch(app: AppHandle, state: Arc<AppState>, key: &str) -> anyhow::Result
         .get(key)
         .cloned()
         .context(tr!("el juego no está instalado", "the game isn't installed"))?;
+    // Juego de navegador: no hay ejecutable, se abre su página en una ventana propia.
+    if let Some(url) = crate::catalog::get(key).and_then(|g| g.web.clone()) {
+        return launch_web(app, state, key, &game.title, &url);
+    }
     if !state.running.lock().unwrap().insert(key.to_string()) {
         anyhow::bail!(tr!("{} ya está en ejecución", "{} is already running", game.title));
     }
@@ -64,21 +68,84 @@ pub fn launch(app: AppHandle, state: Arc<AppState>, key: &str) -> anyhow::Result
         // El tiempo de preparación no cuenta como tiempo de juego.
         let tracked = track(&mut child, &dirs, started);
         let secs = if preparing { 0 } else { tracked };
-        if let Some(g) = state.store.library.lock().unwrap().get_mut(&key) {
-            g.playtime_secs += secs;
-            g.last_played = Some(now());
-        }
-        let _ = state.store.save_library();
-        // El perfil cuenta por juego y no se pierde al desinstalar; puede desbloquear logros.
-        crate::profile::record_session(&mut state.store.profile.lock().unwrap(), &key, secs);
-        crate::profile_changed(&app, &state);
-        state.running.lock().unwrap().remove(&key);
-        if state.running.lock().unwrap().is_empty() {
-            crate::tray::set_playing(&app, None);
-            crate::discord::set(true, None);
-        }
-        let _ = app.emit("game-state", (&key, false));
-        let _ = app.emit("library-changed", ());
+        end_session(&app, &state, &key, secs);
+    });
+    Ok(())
+}
+
+/// Cierra una sesión de juego: suma el tiempo a la biblioteca y al perfil (que puede desbloquear logros) y avisa a la interfaz.
+fn end_session(app: &AppHandle, state: &Arc<AppState>, key: &str, secs: u64) {
+    if let Some(g) = state.store.library.lock().unwrap().get_mut(key) {
+        g.playtime_secs += secs;
+        g.last_played = Some(now());
+    }
+    let _ = state.store.save_library();
+    // El perfil cuenta por juego y no se pierde al desinstalar.
+    crate::profile::record_session(&mut state.store.profile.lock().unwrap(), key, secs);
+    crate::profile_changed(app, state);
+    state.running.lock().unwrap().remove(key);
+    if state.running.lock().unwrap().is_empty() {
+        crate::tray::set_playing(app, None);
+        crate::discord::set(true, None);
+    }
+    let _ = app.emit("game-state", (key, false));
+    let _ = app.emit("library-changed", ());
+}
+
+/// Abre un juego de navegador en su propia ventana. La ventana no tiene acceso a Dársena (ver capabilities) y solo
+/// puede navegar por la web del juego: los enlaces a otros sitios se abren en tu navegador. El tiempo cuenta mientras
+/// la ventana esté abierta.
+fn launch_web(app: AppHandle, state: Arc<AppState>, key: &str, title: &str, url: &str) -> anyhow::Result<()> {
+    let label: String = format!("web-{}", key.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '-' }).collect::<String>());
+    if let Some(w) = app.get_webview_window(&label) {
+        let _ = w.unminimize();
+        let _ = w.set_focus();
+        return Ok(());
+    }
+    let parsed: tauri::Url = url.parse().context("la dirección del juego no es válida")?;
+    anyhow::ensure!(parsed.scheme() == "https", tr!("la página del juego debe ser https", "the game's page must be https"));
+    let host = parsed.host_str().context("la dirección del juego no tiene servidor")?.to_string();
+    if !state.running.lock().unwrap().insert(key.to_string()) {
+        anyhow::bail!(tr!("{} ya está en ejecución", "{} is already running", title));
+    }
+    // La ventana se crea fuera del hilo del comando: en Windows, crearla desde un comando síncrono bloquea la aplicación.
+    let title = title.to_string();
+    let key = key.to_string();
+    std::thread::spawn(move || {
+        let built = WebviewWindowBuilder::new(&app, &label, WebviewUrl::External(parsed))
+            .title(&title)
+            .inner_size(1280.0, 720.0)
+            .min_inner_size(640.0, 400.0)
+            .center()
+            .on_navigation(move |u| {
+                if !matches!(u.scheme(), "http" | "https") {
+                    return true;
+                }
+                let same = u.scheme() == "https" && u.host_str().is_some_and(|h| h == host || h.ends_with(&format!(".{host}")));
+                if !same {
+                    let _ = tauri_plugin_opener::open_url(u.as_str(), None::<&str>);
+                }
+                same
+            })
+            .build();
+        let win = match built {
+            Ok(w) => w,
+            Err(e) => {
+                state.running.lock().unwrap().remove(&key);
+                use tauri_plugin_dialog::DialogExt;
+                app.dialog().message(format!("{e}")).title("Dársena").show(|_| {});
+                return;
+            }
+        };
+        let _ = app.emit("game-state", (&key, true));
+        crate::tray::set_playing(&app, Some(&title));
+        crate::discord::set(state.store.settings.lock().unwrap().discord_presence, Some(&title));
+        let (started, app2) = (std::time::Instant::now(), app.clone());
+        win.on_window_event(move |ev| {
+            if let tauri::WindowEvent::Destroyed = ev {
+                end_session(&app2, &state, &key, started.elapsed().as_secs());
+            }
+        });
     });
     Ok(())
 }

@@ -402,6 +402,8 @@ const EN = {
   "No hay descargas": "No downloads",
   "Conectando…": "Connecting…",
   "Cancelando…": "Cancelling…",
+  "Este juego se juega en el navegador: Dársena lo abre en su propia ventana y no descarga nada. Tus partidas se guardan en el navegador de Dársena.": "This game is played in the browser: Dársena opens it in its own window and downloads nothing. Your saves are kept in Dársena's browser storage.",
+  "Página del juego": "Game page",
   "Descargando": "Downloading",
   "En pausa": "Paused",
   "Extrayendo e instalando…": "Extracting and installing…",

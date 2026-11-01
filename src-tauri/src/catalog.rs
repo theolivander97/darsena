@@ -96,6 +96,10 @@ pub struct CatalogGame {
     /// Aclaración sobre los datos (versión o región exigida, archivo concreto…).
     #[serde(default)]
     pub needs_note: Option<String>,
+    /// Juego que se juega en el navegador: la página donde corre. Dársena lo abre en una ventana propia, sin descargar
+    /// nada (los datos y partidas se quedan en el almacenamiento del navegador).
+    #[serde(default)]
+    pub web: Option<String>,
 }
 
 /// Preparación del juego (rutas relativas a la carpeta del ejecutable del port).
@@ -314,6 +318,10 @@ pub async fn check_update(data_dir: &Path) -> anyhow::Result<CatalogUpdate> {
     }
 
     let new = parse(&text)?;
+    // Nunca se vuelve a un catálogo más antiguo que el que ya se tiene (p. ej. el embebido de una versión recién instalada).
+    if new.generated_at < old.generated_at {
+        return Ok(summary(old, false, Vec::new()));
+    }
     let old_ids: HashSet<&str> = old.games.iter().map(|g| g.id.as_str()).collect();
     let added = new
         .games

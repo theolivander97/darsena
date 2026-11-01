@@ -21,10 +21,10 @@ const CONSOLES = [
   "GameCube", "Wii", "Wii U", "Switch", "Virtual Boy", "PlayStation", "PlayStation 2", "PlayStation 3",
   "PlayStation 4", "PSP", "Xbox", "Xbox 360", "Sega", "Arcade", "PC", "Otros",
 ];
-const PLATFORMS = ["Windows", "Linux", "macOS"];
+const PLATFORMS = ["Windows", "Linux", "macOS", "Web"];
 // Orden de los campos al guardar (los desconocidos van al final).
 const FIELD_ORDER = ["id", "title", "port", "author", "origin", "repo", "gitlab", "homepage", "console", "consoles", "franchise", "aliases", "asset", "exe", "branch", "setup", "requirements", "saves",
-  "experimental", "ai", "platforms", "needs", "needsNote", "addedAt", "downloads", "game"];
+  "experimental", "ai", "platforms", "web", "needs", "needsNote", "addedAt", "downloads", "game"];
 const TODAY = new Date().toISOString().slice(0, 10);
 
 function fail(msg) {
@@ -89,6 +89,14 @@ catalog.games.forEach((g, i) => {
     g.port ||= g.repo?.split("/")[1];
     g.author ||= g.repo?.split("/")[0];
   }
+  // "web": juego que corre en el navegador (https). Dársena lo abre en su propia ventana, sin descargar nada. Se guarda como
+  // origin "external" para que las versiones antiguas de Dársena no intenten bajar nada de GitHub.
+  if (g.web != null) {
+    if (typeof g.web !== "string" || !/^https:\/\/[^\s/]+/.test(g.web)) err(`"web" debe ser una URL https`);
+    g.origin = "external";
+    g.platforms ??= ["Web"];
+    g.homepage ||= g.repo ? `https://github.com/${g.repo}` : g.web;
+  }
   if (g.setup != null && (typeof g.setup.exe !== "string" || !Array.isArray(g.setup.done) || !g.setup.done.length)) err(`"setup" debe ser { "exe": "...", "done": ["...", ...] }`);
   // "requirements": { minimum, recommended }, cada uno con os, cpu, ram, gpu, storage, other (texto o { es, en }).
   if (g.requirements != null) {
@@ -112,7 +120,7 @@ catalog.games.forEach((g, i) => {
   if (external) {
     g.author ||= "autor desconocido";
     g.id ||= slug(`${g.author} ${g.port}`);
-    if (g.repo && !g.branch) warnings.push(`${name}: es "external" pero tiene "repo"; Dársena no descargará de GitHub`);
+    if (g.repo && !g.branch && !g.web) warnings.push(`${name}: es "external" pero tiene "repo"; Dársena no descargará de GitHub`);
   }
   if (g.repo && !/^[\w.-]+\/[\w.-]+$/.test(g.repo)) err(`"repo" debe ser "usuario/repositorio" de GitHub (es "${g.repo}")`);
   if (g.repo && !external) {

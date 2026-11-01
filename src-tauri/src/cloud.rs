@@ -48,6 +48,10 @@ fn expand(spec: &str, port_dir: &Path) -> Option<(String, PathBuf)> {
 
 /// Carpetas de partidas de un port instalado: (etiqueta, carpeta). Solo las que existen.
 pub fn save_dirs(inst: &InstalledGame) -> Vec<(String, PathBuf)> {
+    // Un juego web no tiene carpeta: sus partidas viven en el navegador.
+    if inst.path.is_empty() {
+        return Vec::new();
+    }
     let port_dir = PathBuf::from(&inst.path);
     let from_catalog: Vec<String> = crate::catalog::get(&inst.id).map(|g| g.saves.clone()).unwrap_or_default();
     let mut out: Vec<(String, PathBuf)> = from_catalog.iter().filter_map(|s| expand(s, &port_dir)).filter(|(_, p)| p.is_dir()).collect();

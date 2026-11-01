@@ -866,6 +866,31 @@ fn install_game(
     // Instalar un port añade su juego a la biblioteca (y ahí sigue aunque se desinstale).
     state.store.owned.lock().unwrap().entry(game.game.clone()).or_insert_with(store::now);
     state.store.save_owned().map_err(err)?;
+    // Juego de navegador: no hay nada que descargar, basta con añadirlo a la biblioteca.
+    if game.web.is_some() {
+        let installed = store::InstalledGame {
+            id: id.clone(),
+            title: game.title.clone(),
+            port: game.port.clone(),
+            console: game.console.clone(),
+            version: None,
+            origin: "Web".into(),
+            path: String::new(),
+            exe: None,
+            installed_at: store::now(),
+            playtime_secs: 0,
+            last_played: None,
+            data: Vec::new(),
+            seed: None,
+            linked: true,
+            mods: Vec::new(),
+            cloud_synced: None,
+        };
+        state.store.library.lock().unwrap().insert(id, installed);
+        state.store.save_library().map_err(err)?;
+        let _ = app.emit("library-changed", ());
+        return Ok(());
+    }
     let choice = match source {
         None => downloads::Choice::Official,
         Some(pick) => {
@@ -1358,7 +1383,8 @@ pub fn run() {
         // Cerrar la ventana la esconde en la bandeja (si así está en Ajustes, o si hay un juego abierto,
         // para no perder su tiempo de juego). Para salir del todo: «Salir» en el menú de la bandeja.
         .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+            // Solo la ventana principal se esconde en la bandeja: las de los juegos web se cierran de verdad.
+            if let (tauri::WindowEvent::CloseRequested { api, .. }, "main") = (event, window.label()) {
                 let app = window.app_handle();
                 if let Some(state) = app.try_state::<Arc<AppState>>() {
                     let keep = state.store.settings.lock().unwrap().close_to_tray || !state.running.lock().unwrap().is_empty();

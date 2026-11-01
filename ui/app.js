@@ -125,7 +125,7 @@ const downloadOf = (id) => state.downloads.find((d) => d.key === id);
 const repoUrl = (g) => (g.gitlab ? `https://gitlab.com/${g.gitlab}` : `https://github.com/${g.repo}`);
 const repoLabel = (g) => (g.gitlab ? t("Ver en GitLab") : t("Ver en GitHub"));
 // Port que no se publica en GitHub: solo se instala desde fuentes (torrent o mirror).
-const isExternal = (g) => g?.origin === "external" && !g?.gitlab && !g?.branch;
+const isExternal = (g) => g?.origin === "external" && !g?.gitlab && !g?.branch && !g?.web;
 
 // Pantalla vacía con el barco de Dársena en gris.
 const emptyHtml = (title, text = "", extra = "", style = "") =>
@@ -373,6 +373,8 @@ function actionButtonHtml(id) {
     return `<button class="btn play" data-play="${esc(id)}" ${running ? "disabled" : ""}>${running ? t("EJECUTANDO") : icon("play") + t("JUGAR")}</button>${upd && !running
       ? `<button class="btn update" data-update="${esc(id)}" title="${t("Hay una versión nueva: {v}", { v: esc(upd.latest) })}">${icon("downloads")}${t("ACTUALIZAR")}</button>` : ""}`;
   }
+  // Juego de navegador: no se descarga nada, JUGAR lo añade a la biblioteca y abre su ventana.
+  if (state.byId.get(id)?.web) return `<button class="btn play" data-play-web="${esc(id)}">${icon("play")}${t("JUGAR")}</button>`;
   const d = downloadOf(id);
   if (d && d.status !== "error" && d.status !== "completed") {
     const pct = d.total ? Math.floor((d.downloaded / d.total) * 100) : 0;
@@ -960,7 +962,11 @@ function renderLibrary() {
       </button>`).join("")}
     </div>` : "";
 
-  const installedBlock = inst ? `
+  const webBlock = `
+    <p class="req">${t("Este juego se juega en el navegador: Dársena lo abre en su propia ventana y no descarga nada. Tus partidas se guardan en el navegador de Dársena.")}</p>
+    ${g.needsNote ? `<p class="muted small">${esc(g.needsNote)}</p>` : ""}
+    <p class="muted small">${t("Página del juego")}: <a data-url="${esc(g.web)}">${esc(new URL(g.web).host)}</a></p>`;
+  const installedBlock = inst && g.web ? webBlock : inst ? `
     ${inst.exe ? "" : `<p class="req">${t("No se detectó el ejecutable. Usa «Elegir ejecutable» para indicarlo.")}</p>`}
     <div id="cloud-box" data-cloud="${esc(inst.id)}"></div>
     <details class="lib-details">
@@ -1808,7 +1814,7 @@ setInterval(() => { if (state.view === "settings") renderSharingInfo(); }, 3000)
 // ---------- Eventos globales (delegación) ----------
 
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-view],[data-goto],[data-open],[data-install-official],[data-install-source],[data-install-first],[data-play],[data-lib],[data-folder],[data-pick-exe],[data-uninstall],[data-pause],[data-resume],[data-cancel],[data-remove-source],[data-toggle],[data-url],[data-port],[data-install-data],[data-data-folder],[data-add],[data-goto-lib],[data-remove-lib],[data-car],[data-login],[data-account],[data-logout],[data-star],[data-review-submit],[data-review-delete],[data-profile],[data-profile-sync],[data-trailer],[data-trailer-play],[data-lib-home],[data-lib-group],[data-shelf-add],[data-shelf-remove],[data-fav],[data-locate],[data-shortcut],[data-news],[data-news-step]");
+  const t = e.target.closest("[data-view],[data-goto],[data-open],[data-install-official],[data-play-web],[data-install-source],[data-install-first],[data-play],[data-lib],[data-folder],[data-pick-exe],[data-uninstall],[data-pause],[data-resume],[data-cancel],[data-remove-source],[data-toggle],[data-url],[data-port],[data-install-data],[data-data-folder],[data-add],[data-goto-lib],[data-remove-lib],[data-car],[data-login],[data-account],[data-logout],[data-star],[data-review-submit],[data-review-delete],[data-profile],[data-profile-sync],[data-trailer],[data-trailer-play],[data-lib-home],[data-lib-group],[data-shelf-add],[data-shelf-remove],[data-fav],[data-locate],[data-shortcut],[data-news],[data-news-step]");
   if (!t?.matches("[data-account]")) toggleAccountMenu(false);
   closeCtxMenu();
   if (!t || t.disabled) return;
@@ -1874,6 +1880,10 @@ document.addEventListener("click", async (e) => {
     }
     else if (d.installSource) openInstall(d.installSource, { sourceUrl: d.src, index: Number(d.idx) });
     else if (d.play) await playWithCloud(d.play);
+    else if (d.playWeb) {
+      if (!isInstalled(d.playWeb)) await call("install_game", { id: d.playWeb, source: null, installDir: null, data: null });
+      await call("launch_game", { id: d.playWeb });
+    }
     else if (d.lib) { state.libGame = d.lib; state.libPort = null; renderLibrary(); }
     else if (d.folder) await call("open_game_folder", { id: d.folder });
     else if (d.url) await call("open_url", { url: d.url });
@@ -2174,7 +2184,11 @@ function ctxMenuHtml(gm) {
   if (port && !isExternal(port)) items.push(item(`data-url="${esc(repoUrl(port))}"`, repoLabel(port), "", "github"));
   if (inst && state.updates?.[inst.id]) items.unshift(item(`data-update="${esc(inst.id)}"`, t("Actualizar a {v}", { v: esc(state.updates[inst.id].latest) }), "strong", "downloads"));
   if (port?.homepage && port.homepage !== repoUrl(port)) items.push(item(`data-url="${esc(port.homepage)}"`, t("Página del proyecto"), "", "external"));
-  if (inst) {
+  if (inst && port?.web) {
+    items.push(item(`data-shortcut="${esc(inst.id)}"`, t("Crear acceso directo"), "", "shortcut"));
+    items.push("<hr>");
+    items.push(item(`data-uninstall="${esc(inst.id)}"`, t("Quitar de la biblioteca"), "danger", "trash"));
+  } else if (inst) {
     items.push(item(`data-folder="${esc(inst.id)}"`, t("Abrir carpeta"), "", "folder"));
     items.push(item(`data-pick-exe="${esc(inst.id)}"`, t("Elegir ejecutable…"), "", "file"));
     items.push(item(`data-shortcut="${esc(inst.id)}"`, t("Crear acceso directo"), "", "shortcut"));

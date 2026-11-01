@@ -3,11 +3,12 @@
 
 // ---------- Partidas en la nube ----------
 
-const cloudOn = () => !!state.user && state.settings?.cloudSaves !== false;
+// Un juego de navegador guarda sus partidas en el navegador, no en una carpeta: no entra en la nube.
+const cloudOn = (id) => !!state.user && state.settings?.cloudSaves !== false && !state.byId.get(id)?.web;
 
 // Antes de jugar: si la nube tiene partidas más nuevas, se traen; si han cambiado las dos, se pregunta.
 async function playWithCloud(id) {
-  if (cloudOn()) {
+  if (cloudOn(id)) {
     const st = await invoke("cloud_status", { id }).catch(() => null);
     if (st?.action === "download") {
       toast(t("Trayendo tus partidas de la nube…"), "ok");
@@ -23,7 +24,7 @@ async function playWithCloud(id) {
 }
 
 async function uploadSavesAfterPlaying(id) {
-  if (!cloudOn()) return;
+  if (!cloudOn(id)) return;
   const st = await invoke("cloud_status", { id }).catch(() => null);
   if (st?.action !== "upload") return;
   try {
