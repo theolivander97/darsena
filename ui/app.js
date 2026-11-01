@@ -962,7 +962,7 @@ function renderLibrary() {
       </button>`).join("")}
     </div>` : "";
 
-  const webBlock = `
+  const webBlock = !g.web ? "" : `
     <p class="req">${t("Este juego se juega en el navegador: Dársena lo abre en su propia ventana y no descarga nada. Tus partidas se guardan en el navegador de Dársena.")}</p>
     ${g.needsNote ? `<p class="muted small">${esc(g.needsNote)}</p>` : ""}
     <p class="muted small">${t("Página del juego")}: <a data-url="${esc(g.web)}">${esc(new URL(g.web).host)}</a></p>`;
