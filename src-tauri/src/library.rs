@@ -8,6 +8,10 @@ use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
 pub fn launch(app: AppHandle, state: Arc<AppState>, key: &str) -> anyhow::Result<()> {
+    // Juego de navegador: se juega sin añadirlo a la biblioteca; su página se abre en una ventana propia.
+    if let Some(g) = crate::catalog::get(key).filter(|g| g.web.is_some()) {
+        return launch_web(app, state, key, &g.title, g.web.as_deref().unwrap_or_default());
+    }
     let game = state
         .store
         .library
@@ -16,10 +20,6 @@ pub fn launch(app: AppHandle, state: Arc<AppState>, key: &str) -> anyhow::Result
         .get(key)
         .cloned()
         .context(tr!("el juego no está instalado", "the game isn't installed"))?;
-    // Juego de navegador: no hay ejecutable, se abre su página en una ventana propia.
-    if let Some(url) = crate::catalog::get(key).and_then(|g| g.web.clone()) {
-        return launch_web(app, state, key, &game.title, &url);
-    }
     if !state.running.lock().unwrap().insert(key.to_string()) {
         anyhow::bail!(tr!("{} ya está en ejecución", "{} is already running", game.title));
     }

@@ -256,7 +256,8 @@ fn parse(text: &str) -> anyhow::Result<Catalog> {
             if g.platforms.is_empty() {
                 g.platforms = vec!["Windows".into()];
             }
-            if g.needs.is_empty() {
+            // Un juego web no necesita datos salvo que se indique.
+            if g.needs.is_empty() && g.web.is_none() {
                 g.needs = default_needs(&g.console).iter().map(|s| s.to_string()).collect();
             }
             seen.insert(g.id.clone()).then_some(g)

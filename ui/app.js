@@ -137,7 +137,7 @@ function show(view) {
   state.view = view;
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === `view-${view}`));
   document.querySelectorAll(".tabs button").forEach((b) =>
-    b.classList.toggle("active", b.dataset.view === view || (view === "detail" && b.dataset.view === "store")
+    b.classList.toggle("active", b.dataset.view === view || (view === "detail" && b.dataset.view === "store") || (view === "webgame" && b.dataset.view === "webgames")
       || (b.dataset.tab === "profile" && ["profile", "dev", "submit", "settings"].includes(view))));
   $("#dl-bar")?.classList.toggle("active", view === "downloads");
   $("#dl-bar")?.classList.toggle("active", view === "downloads");
@@ -156,6 +156,8 @@ function render() {
     case "submit": renderSubmit(); break;
     case "dev": renderDev(); break;
     case "community": renderCommunity(); break;
+    case "webgames": renderWebgames(); break;
+    case "webgame": renderWebgame(); break;
   }
   renderBadge();
   renderMini();

@@ -977,6 +977,12 @@ main { height: calc(100% - 56px - 36px); }
 a.link { color: var(--accent); cursor: pointer; }
 .small-dialog { max-width: 480px; }
 .community { max-width: 1100px; margin: 0 auto; padding: 28px 32px 60px; }
+.webgames .grid { margin-top: 14px; }
+.web-back { position: absolute; top: 16px; left: 24px; z-index: 2; padding: 7px 14px; border: 1px solid rgba(255,255,255,.18); border-radius: var(--radius); background: rgba(0,0,0,.55); color: var(--text-bright); font-size: 13px; cursor: pointer; backdrop-filter: blur(6px); }
+.web-back:hover { border-color: var(--accent); color: var(--accent); }
+.webgame .lib-bar { margin-top: 0; }
+.webgame .synopsis, .webgame .req { margin-top: 16px; max-width: 880px; }
+#web-search { min-width: 240px; }
 .com-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
 .com-head h1 { margin: 0 0 4px; font-size: 30px; }
 .com-reviews { display: grid; align-items: start; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
@@ -1132,5 +1138,5 @@ body.bp-on #toasts { z-index: 9500; }
 .bp-news.focus .bp-news-card { box-shadow: 0 0 0 4px #fff; }
 
 /* ---------- Botón de Discord ---------- */
-.discord-btn { display: inline-flex; align-items: center; gap: 8px; margin-right: 6px; padding: 6px 12px; border: 0; border-radius: var(--radius); background: #5865f2; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .12s, transform .12s; }
-.discord-btn:hover { background: #6b77f5; transform: translateY(-1px); }
+.discord-btn { display: inline-flex; align-items: center; gap: 8px; margin-right: 6px; padding: 6px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-2); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; transition: border-color .12s, color .12s; }
+.discord-btn:hover { border-color: var(--accent); color: var(--accent); }
