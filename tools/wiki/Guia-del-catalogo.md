@@ -140,6 +140,23 @@ Si se juntan por error, o al revés, corrígelo en `catalog/games-overrides.json
 
 La clave es el `id` del port y el valor, el id del juego al que debe pertenecer.
 
+## Web Games (juegos que se juegan en el navegador)
+
+Los juegos web tienen su propio archivo, `webgames.json`, junto a `catalog.json`. Es el mismo formato (una lista `games`), pero
+cada entrada lleva `"web"` con la dirección `https` donde se juega. Dársena la abre en su propia ventana, sin descargar nada.
+
+```json
+{ "title": "Doom", "port": "Dwasm", "author": "GMH-Code", "repo": "GMH-Code/Dwasm",
+  "web": "https://dwasm.m-h.org.uk/", "console": "PC", "needs": ["wad"] }
+```
+
+- `needs`: `[]` si abre directo; si pide tus archivos, ponlos (se muestra «Tus archivos del juego»).
+- Se editan igual que el catálogo: `node tools\catalogctualizar.mjs` valida y guarda, `publicar.mjs` lo sube. Si pones una entrada con
+  `"web"` en `catalog.json`, `actualizar.mjs` la pasa sola a `webgames.json`.
+- Un juego puede tener ports en `catalog.json` y una versión web en `webgames.json`: se agrupan en la misma ficha.
+- Solo páginas del autor del port, de código abierto o que piden tu propia copia del juego. No se enlazan sitios que sirven el
+  juego comercial completo desde su servidor.
+
 ## Qué ports se pueden añadir
 
 Solo ports que **piden tu propia copia** del juego y cuya release **no incluye los datos del juego**:

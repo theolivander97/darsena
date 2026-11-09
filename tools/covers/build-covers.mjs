@@ -15,6 +15,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
+import { loadAll } from "../catalog/cargar.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const COVERS = join(ROOT, "covers");
@@ -190,7 +191,7 @@ async function sgdbGrid(gameId) {
 // ---------------------------------------------------------------------------
 
 mkdirSync(MANUAL, { recursive: true });
-const catalog = JSON.parse(readFileSync(join(ROOT, "catalog", "catalog.json"), "utf8")).games;
+const catalog = loadAll();
 const indexFile = join(COVERS, "index.json");
 const index = existsSync(indexFile) ? JSON.parse(readFileSync(indexFile, "utf8")).covers : {};
 // Curación a mano: id -> "Sistema libretro/Nombre.png" para forzar una carátula, o null para excluirla.

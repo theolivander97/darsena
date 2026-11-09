@@ -13,7 +13,10 @@ use std::sync::RwLock;
 
 /// Catálogo publicado. raw.githubusercontent se actualiza a los pocos minutos de editar el archivo en GitHub.
 pub const REMOTE_URL: &str = "https://raw.githubusercontent.com/theolivander97/darsena-launcher/main/catalog.json";
+/// Los juegos que se juegan en el navegador van en su propio archivo (mismo formato).
+pub const WEB_REMOTE_URL: &str = "https://raw.githubusercontent.com/theolivander97/darsena-launcher/main/webgames.json";
 const CACHE_FILE: &str = "catalog-remote.json";
+const WEB_CACHE_FILE: &str = "webgames-remote.json";
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -212,14 +215,18 @@ pub fn slug(s: &str) -> String {
     n.split('-').filter(|w| !w.is_empty()).collect::<Vec<_>>().join("-")
 }
 
-/// Parsea y normaliza un catálogo. Las entradas incompletas se descartan en vez de romper todo
-/// (el catálogo remoto se puede editar a mano desde la web de GitHub).
-fn parse(text: &str) -> anyhow::Result<Catalog> {
+/// Parsea y normaliza el catálogo: los ports (`text`) y, aparte, los juegos web (`web`, puede estar vacío).
+/// Las entradas incompletas se descartan en vez de romper todo (el catálogo remoto se puede editar a mano desde la web de GitHub).
+fn parse(text: &str, web: &str) -> anyhow::Result<Catalog> {
     let file: CatalogFile = serde_json::from_str(text).context(tr!("el catálogo no es JSON válido", "the catalog isn't valid JSON"))?;
+    // Si el archivo de juegos web falla, se siguen usando los ports: un error ahí no debe dejar la app sin catálogo.
+    let web_file: Option<CatalogFile> = (!web.trim().is_empty()).then(|| serde_json::from_str(web).ok()).flatten();
+    let generated_at = web_file.as_ref().map(|w| w.generated_at.clone()).filter(|w| *w > file.generated_at).unwrap_or(file.generated_at.clone());
     let mut seen = HashSet::new();
     let games: Vec<CatalogGame> = file
         .games
         .into_iter()
+        .chain(web_file.map(|w| w.games).unwrap_or_default())
         .filter_map(|mut g| {
             if g.title.trim().is_empty() || g.console.trim().is_empty() {
                 return None;
@@ -264,7 +271,7 @@ fn parse(text: &str) -> anyhow::Result<Catalog> {
         })
         .collect();
     anyhow::ensure!(!games.is_empty(), tr!("el catálogo no tiene ningún juego válido", "the catalog has no valid games"));
-    Ok(Catalog { games, generated_at: file.generated_at, hash: hash(text) })
+    Ok(Catalog { games, generated_at, hash: hash(&format!("{text}\n{web}")) })
 }
 
 fn set(c: Catalog) -> &'static Catalog {
@@ -277,14 +284,15 @@ fn current() -> &'static Catalog {
     if let Some(c) = *CURRENT.read().unwrap() {
         return c;
     }
-    set(parse(include_str!("../../catalog/catalog.json")).expect("catalog.json embebido inválido"))
+    set(parse(include_str!("../../catalog/catalog.json"), include_str!("../../catalog/webgames.json")).expect("catalog.json embebido inválido"))
 }
 
 /// Al arrancar: usa el último catálogo descargado si no es más antiguo que el embebido.
 pub fn init(data_dir: &Path) {
     let embedded = current();
     let Ok(text) = std::fs::read_to_string(data_dir.join(CACHE_FILE)) else { return };
-    match parse(&text) {
+    let web = std::fs::read_to_string(data_dir.join(WEB_CACHE_FILE)).unwrap_or_default();
+    match parse(&text, &web) {
         Ok(cached) if cached.generated_at >= embedded.generated_at => {
             set(cached);
         }
@@ -306,6 +314,18 @@ pub async fn check_update(data_dir: &Path) -> anyhow::Result<CatalogUpdate> {
         .context(tr!("GitHub no devolvió el catálogo", "GitHub didn't return the catalog"))?
         .text()
         .await?;
+    // Los juegos web son un archivo aparte: si aún no está publicado (404) se sigue sin ellos; otro fallo es un error.
+    let web_resp = crate::http_client()
+        .get(format!("{WEB_REMOTE_URL}?t={}", crate::store::now()))
+        .timeout(std::time::Duration::from_secs(15))
+        .send()
+        .await
+        .context(tr!("no se pudo conectar con GitHub", "couldn't connect to GitHub"))?;
+    let web = if web_resp.status() == reqwest::StatusCode::NOT_FOUND {
+        String::new()
+    } else {
+        web_resp.error_for_status().context(tr!("GitHub no devolvió los juegos web", "GitHub didn't return the web games"))?.text().await?
+    };
 
     let old = current();
     let summary = |c: &Catalog, updated: bool, added: Vec<String>| CatalogUpdate {
@@ -314,11 +334,11 @@ pub async fn check_update(data_dir: &Path) -> anyhow::Result<CatalogUpdate> {
         ports: c.games.len(),
         games: c.games.iter().map(|g| g.game.as_str()).collect::<HashSet<_>>().len(),
     };
-    if hash(&text) == old.hash {
+    if hash(&format!("{text}\n{web}")) == old.hash {
         return Ok(summary(old, false, Vec::new()));
     }
 
-    let new = parse(&text)?;
+    let new = parse(&text, &web)?;
     // Nunca se vuelve a un catálogo más antiguo que el que ya se tiene (p. ej. el embebido de una versión recién instalada).
     if new.generated_at < old.generated_at {
         return Ok(summary(old, false, Vec::new()));
@@ -332,6 +352,7 @@ pub async fn check_update(data_dir: &Path) -> anyhow::Result<CatalogUpdate> {
         .collect();
     std::fs::create_dir_all(data_dir)?;
     std::fs::write(data_dir.join(CACHE_FILE), &text)?;
+    std::fs::write(data_dir.join(WEB_CACHE_FILE), &web)?;
     let new = set(new);
     Ok(summary(new, true, added))
 }
@@ -413,7 +434,7 @@ mod tests {
 
     #[test]
     fn entrada_minima_editada_a_mano() {
-        let c = parse(r#"{"games":[{"title":"Juego Nuevo","repo":"Autor/JuegoNuevoRecomp","console":"Nintendo 64"},{"title":"Sin repo"}]}"#).unwrap();
+        let c = parse(r#"{"games":[{"title":"Juego Nuevo","repo":"Autor/JuegoNuevoRecomp","console":"Nintendo 64"},{"title":"Sin repo"}]}"#, "").unwrap();
         assert_eq!(c.games.len(), 1);
         let g = &c.games[0];
         assert_eq!((g.id.as_str(), g.author.as_str(), g.port.as_str(), g.game.as_str()),
@@ -425,9 +446,21 @@ mod tests {
     fn port_externo_sin_repo() {
         let c = parse(r#"{"games":[
             {"title":"Juego X","port":"Juego X PC","author":"Alguien","origin":"external","console":"Xbox 360","homepage":"https://www.moddb.com/x"},
-            {"title":"Sin nombre de port","origin":"external","console":"Xbox 360"}]}"#).unwrap();
+            {"title":"Sin nombre de port","origin":"external","console":"Xbox 360"}]}"#, "").unwrap();
         assert_eq!(c.games.len(), 1);
         let g = &c.games[0];
         assert_eq!((g.id.as_str(), g.origin), ("alguien-juego-x-pc", Origin::External));
+    }
+
+    #[test]
+    fn ports_y_juegos_web_se_juntan() {
+        let ports = r#"{"generatedAt":"2026-11-01","games":[{"title":"Cave Story","port":"doukutsu-rs","author":"doukutsu-rs","origin":"external","console":"PC"}]}"#;
+        let web = r#"{"generatedAt":"2026-11-09","games":[{"title":"Cave Story","port":"NXEngine-evo (web)","author":"midzer","origin":"external","console":"PC","web":"https://midzer.de/wasm/cavestory/"}]}"#;
+        let c = parse(ports, web).unwrap();
+        assert_eq!(c.games.len(), 2);
+        assert!(c.games.iter().any(|g| g.web.is_some() && g.needs.is_empty()));
+        assert_eq!(c.generated_at, "2026-11-09");
+        // Un archivo de juegos web roto no tumba el catálogo de ports.
+        assert_eq!(parse(ports, "no es json").unwrap().games.len(), 1);
     }
 }

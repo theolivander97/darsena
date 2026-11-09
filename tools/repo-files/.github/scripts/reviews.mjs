@@ -12,7 +12,7 @@ const REPLY_MARK = "<!-- darsena:reply -->";
 const COMPAT = /<!--\s*darsena:compat\s*(\{[\s\S]*?\})\s*-->/;
 
 // Desarrolladores de cada juego: dueño y contribuidores de los repos de sus ports.
-const catalog = existsSync("catalog.json") ? JSON.parse(readFileSync("catalog.json", "utf8")).games : [];
+const catalog = ["catalog.json", "webgames.json"].flatMap((f) => (existsSync(f) ? JSON.parse(readFileSync(f, "utf8")).games : []));
 const contributorsCache = new Map();
 async function contributors(repo) {
   if (contributorsCache.has(repo)) return contributorsCache.get(repo);

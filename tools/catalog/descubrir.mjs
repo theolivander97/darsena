@@ -10,9 +10,10 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { gh, ROOT } from "../comun.mjs";
+import { loadAll } from "./cargar.mjs";
 
 const MIN_STARS = Number(process.argv[2] ?? 25);
-const catalog = JSON.parse(readFileSync(join(ROOT, "catalog", "catalog.json"), "utf8")).games;
+const catalog = loadAll();
 const known = new Set(catalog.map((g) => g.repo?.toLowerCase()).filter(Boolean));
 
 const SEARCHES = [

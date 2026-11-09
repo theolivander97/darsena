@@ -16,6 +16,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadAll } from "./cargar.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const CATALOG = join(ROOT, "catalog", "catalog.json");
@@ -195,7 +196,7 @@ async function fromSteam({ names }) {
 
 // ---------- Principal ----------
 
-const catalog = JSON.parse(readFileSync(CATALOG, "utf8")).games;
+const catalog = loadAll();
 const overrides = existsSync(OVERRIDES) ? JSON.parse(readFileSync(OVERRIDES, "utf8")) : { featured: [], games: {} };
 const previous = existsSync(OUT) ? JSON.parse(readFileSync(OUT, "utf8")).games ?? {} : {};
 

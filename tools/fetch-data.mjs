@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const FILES = [
   ["https://raw.githubusercontent.com/theolivander97/darsena-launcher/main/catalog.json", "catalog/catalog.json"],
+  ["https://raw.githubusercontent.com/theolivander97/darsena-launcher/main/webgames.json", "catalog/webgames.json"],
   ["https://raw.githubusercontent.com/theolivander97/darsena-launcher/main/info.json", "catalog/info.json"],
   ["https://cdn.jsdelivr.net/gh/theolivander97/portlauncher-covers@main/index.json", "covers/index.json"],
 ];

@@ -14,6 +14,8 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const catalogFile = join(ROOT, "catalog", "catalog.json");
+// Los juegos que se juegan en el navegador viven aparte, en webgames.json (mismo formato, con el campo "web").
+const webFile = join(ROOT, "catalog", "webgames.json");
 const overridesFile = join(ROOT, "catalog", "games-overrides.json");
 
 const CONSOLES = [
@@ -50,6 +52,14 @@ try {
   fail(`catalog.json no es JSON válido: ${e.message}${where}`);
 }
 if (!Array.isArray(catalog.games)) fail(`catalog.json debe tener una lista "games"`);
+// Se validan y agrupan juntos (un juego puede tener ports y una versión web); al guardar se separan por el campo "web".
+let webDoc = { games: [] };
+if (existsSync(webFile)) {
+  try { webDoc = JSON.parse(readFileSync(webFile, "utf8")); } catch (e) { fail(`webgames.json no es JSON válido: ${e.message}`); }
+  if (!Array.isArray(webDoc.games)) fail(`webgames.json debe tener una lista "games"`);
+}
+const fromWebFile = new Set(webDoc.games);
+catalog.games.push(...webDoc.games);
 
 // ---------- 2. Validar ----------
 const slug = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "")
@@ -67,6 +77,7 @@ catalog.games.forEach((g, i) => {
   const name = g.title || g.repo || `juego nº ${i + 1}`;
   const err = (m) => errors.push(`${name}: ${m}`);
 
+  if (fromWebFile.has(g) && !g.web) err(`está en webgames.json pero no tiene "web" (la dirección del juego)`);
   // "origin": "github" (por defecto, releases del repo) o "external" (no está en GitHub: solo desde fuentes).
   if (g.origin != null && !["github", "external"].includes(g.origin)) err(`"origin" debe ser "github" o "external" (es "${g.origin}")`);
   // "gitlab": "grupo/proyecto" de gitlab.com. Se guarda como origin "external" (las versiones antiguas de Dársena no
@@ -209,11 +220,12 @@ const ordered = (g) => Object.fromEntries([
   ...FIELD_ORDER.filter((f) => f in g).map((f) => [f, g[f]]),
   ...Object.keys(g).filter((f) => !FIELD_ORDER.includes(f)).map((f) => [f, g[f]]),
 ]);
-const out = `{\n"schemaVersion": ${catalog.schemaVersion ?? 1},\n"generatedAt": "${new Date().toISOString().slice(0, 10)}",\n"games": [\n` +
-  catalog.games.map((g) => JSON.stringify(ordered(g))).join(",\n") + "\n]\n}\n";
-writeFileSync(catalogFile, out);
+const render = (games) => `{\n"schemaVersion": ${catalog.schemaVersion ?? 1},\n"generatedAt": "${new Date().toISOString().slice(0, 10)}",\n"games": [\n` +
+  games.map((g) => JSON.stringify(ordered(g))).join(",\n") + "\n]\n}\n";
+writeFileSync(catalogFile, render(catalog.games.filter((g) => !g.web)));
+writeFileSync(webFile, render(catalog.games.filter((g) => g.web)));
 
 const byGame = {};
 for (const g of catalog.games) (byGame[g.game] ??= []).push(g);
 const multi = Object.values(byGame).filter((v) => v.length > 1).length;
-console.log(`OK: Catálogo actualizado: ${catalog.games.length} ports -> ${Object.keys(byGame).length} juegos (${multi} con varios ports)`);
+console.log(`OK: Catálogo actualizado: ${catalog.games.filter((g) => !g.web).length} ports + ${catalog.games.filter((g) => g.web).length} juegos web -> ${Object.keys(byGame).length} juegos (${multi} con varios ports)`);

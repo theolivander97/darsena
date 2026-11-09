@@ -17,7 +17,7 @@ import { fail, git, GIT_USER, REPO_DIR, REPO_URL, ROOT, TOOLS } from "../comun.m
 const LOCAL = join(ROOT, "catalog");
 const LAST_SYNC = join(TOOLS, "catalog", ".ultima-publicacion");
 // La portada del repo (README.md) sale de tools/repo-files/; la guía del catálogo vive en la wiki (tools/wiki/).
-const FILES = [["catalog.json", "catalog.json"], ["games-overrides.json", "games-overrides.json"], ["info.json", "info.json"], ["info-overrides.json", "info-overrides.json"]];
+const FILES = [["catalog.json", "catalog.json"], ["webgames.json", "webgames.json"], ["games-overrides.json", "games-overrides.json"], ["info.json", "info.json"], ["info-overrides.json", "info-overrides.json"]];
 const message = process.argv[2] || `Actualiza el catálogo (${new Date().toISOString().slice(0, 10)})`;
 const read = (p) => (existsSync(p) ? readFileSync(p, "utf8").replace(/\r\n/g, "\n") : null);
 
@@ -86,6 +86,7 @@ cpSync(join(TOOLS, "repo-files"), REPO_DIR, { recursive: true });
 // se sube en su propio commit con un mensaje fijo que dice qué es, no qué cambió.
 const DESCRIPCIONES = {
   "catalog.json": "Catálogo de Dársena",
+  "webgames.json": "Catálogo de Web Games (juegos que se juegan en el navegador)",
   "games-overrides.json": "Correcciones de agrupación de ports por juego",
   "info.json": "Sinopsis, tráilers y destacados de los juegos",
   "info-overrides.json": "Sinopsis, tráilers y destacados puestos a mano",
