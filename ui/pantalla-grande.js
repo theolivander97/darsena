@@ -12,13 +12,14 @@ const BP_SECTIONS = [
   ["home", "Inicio", "home"],
   ["library", "Biblioteca", "library"],
   ["explore", "Explorar", "explore"],
+  ["webgames", "Web Games", "web"],
   ["community", "Comunidad", "community"],
   ["downloads", "Descargas", "downloads"],
   ["settings", "Ajustes", "settings"],
 ];
 
 const bpPlayed = (id) => playedOf(id);
-const bp = { open: false, section: "home", detail: null, menu: false, menuIdx: 0, grid: [], r: 0, c: 0, saved: null, filter: "all", homeTab: "featured", poll: 0, clock: 0, pad: false };
+const bp = { open: false, section: "home", detail: null, webPort: null, menu: false, menuIdx: 0, grid: [], r: 0, c: 0, saved: null, filter: "all", homeTab: "featured", poll: 0, clock: 0, pad: false };
 
 const bpClock = () => new Date().toLocaleTimeString(LOCALE(), { hour: "2-digit", minute: "2-digit" });
 const bpCols = () => Math.max(3, Math.floor((window.innerWidth - 140) / 220));
@@ -119,8 +120,9 @@ function bpGo(section) {
 function bpRender(keepFocus = false) {
   const main = $("#bp-main");
   if (!main) return;
-  const builders = { home: bpHome, library: bpLibrary, explore: bpExplore, community: bpCommunity, downloads: bpDownloads, settings: bpSettings };
-  const view = bp.detail ? bpDetail(bp.detail) : builders[bp.section]();
+  const builders = { home: bpHome, library: bpLibrary, explore: bpExplore, webgames: bpWebGames, community: bpCommunity, downloads: bpDownloads, settings: bpSettings };
+  if (!bp.detail) bp.webPort = null;
+  const view = bp.detail ? (bp.webPort ? bpWebDetail(bp.detail, bp.webPort) : bpDetail(bp.detail)) : builders[bp.section]();
   bp.grid = view.rows;
   main.className = view.hero ? "has-hero" : "";
   main.innerHTML = view.html;
@@ -261,6 +263,61 @@ function bpExplore() {
     if (list.length >= 6) rows.push({ title: consoleName(c), items: bpGameItems(list) });
   }
   return { rows, html: `<div class="bp-rows">${rows.map(bpRowHtml).join("")}</div>` };
+}
+
+// Web Games: juegos que se juegan en el navegador. Se abren en su propia ventana, sin descargar nada.
+function bpWebGames() {
+  const ports = [...state.byId.values()].filter((p) => p.web && state.games.get(p.game))
+    .sort((a, b) => a.title.localeCompare(b.title, LANG()));
+  const item = (p) => ({ gm: state.games.get(p.game), run: () => { bp.saved = { r: bp.r, c: bp.c }; bp.detail = state.games.get(p.game); bp.webPort = p; bp.r = 0; bp.c = 0; bpRender(); } });
+  const direct = ports.filter((p) => !p.needs?.length);
+  const files = ports.filter((p) => p.needs?.length);
+  const rows = [
+    { title: t("Abren directo"), items: direct.map(item) },
+    { title: t("Necesitan tus archivos del juego"), items: files.map(item) },
+  ].filter((r) => r.items.length);
+  if (!rows.length) return bpEmpty(t("Web Games"), t("Aún no hay juegos web."));
+  return { rows, html: `<h2 class="bp-title">${t("Web Games")}<span>${t("Juegos que se juegan en el navegador")}</span></h2><div class="bp-rows">${rows.map(bpRowHtml).join("")}</div>` };
+}
+
+// Ficha de un juego web: JUGAR no lo añade a la biblioteca; AÑADIR sí.
+function bpWebDetail(gm, port) {
+  const running = state.running.has(port.id);
+  const owned = isOwned(gm.id);
+  const syn = synopsisOf(gm.id);
+  const logo = logoSrc(gm.id);
+  const buttons = [
+    [running ? t("EJECUTANDO") : t("JUGAR"), async () => { if (!running) { await call("launch_game", { id: port.id }); bpRender(true); } }, true],
+  ];
+  if (!owned) {
+    buttons.push([t("AÑADIR A LA BIBLIOTECA"), async () => {
+      await call("add_to_library", { game: gm.id });
+      [state.library, state.owned] = await Promise.all([invoke("get_library"), invoke("get_owned")]);
+      bpRender(true);
+    }]);
+  }
+  buttons.push([t("Volver"), () => bpBack()]);
+  const row = {
+    items: buttons.map(([label, run, primary], c) => ({
+      run,
+      html: (r) => `<button class="bp-btn ${primary ? "primary" : ""}" data-r="${r}" data-c="${c}">${esc(label)}</button>`,
+    })),
+  };
+  return {
+    rows: [row],
+    html: `<div class="bp-detail">
+      <div class="bp-detail-body">
+        ${logo ? `<img class="bp-logo" src="${logo}" alt="">` : `<h1>${esc(gm.title)}</h1>`}
+        <div class="bp-meta">WEB · ${esc(port.port)} ${t("por {author}", { author: esc(port.author) })}</div>
+        <div class="bp-actions">${row.items.map((it) => it.html(0)).join("")}</div>
+        <div class="bp-stats">
+          <div><span>${t("REQUISITO")}</span><b>${port.needs?.length ? t("Tus archivos del juego") : t("Abre directo")}</b></div>
+          <div><span>${t("Estado")}</span><b>${owned ? t("En tu biblioteca") : t("No está en tu biblioteca")}</b></div>
+        </div>
+        ${syn ? `<p class="bp-syn">${esc(syn.text.length > 420 ? syn.text.slice(0, 417) + "…" : syn.text)}</p>` : ""}
+      </div>
+    </div>`,
+  };
 }
 
 // Comunidad: mods y reseñas (se rellena cuando llegan los datos)
