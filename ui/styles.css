@@ -1175,3 +1175,53 @@ body.bp-on #toasts { z-index: 9500; }
 /* ---------- Botón de Discord ---------- */
 .discord-btn { display: inline-flex; align-items: center; gap: 8px; margin-right: 6px; padding: 6px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-2); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; transition: border-color .12s, color .12s; }
 .discord-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---------- Botones de cristal ---------- */
+/* Todos los botones llevan un reflejo suave arriba; los amarillos (JUGAR, INSTALAR, AÑADIR…) brillan y, al pasar el
+   puntero, se aclaran y les cruza un destello, como los de Steam. */
+.btn {
+  position: relative; overflow: hidden;
+  border: 1px solid rgba(255,255,255,.12);
+  background: linear-gradient(180deg, rgba(255,255,255,.16) 0%, rgba(255,255,255,.05) 48%, rgba(255,255,255,.02) 100%), #2a2a2a;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), inset 0 -1px 0 rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.35);
+  transition: background .15s, box-shadow .15s, filter .15s, border-color .15s, transform .1s;
+}
+.btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(255,255,255,.26) 0%, rgba(255,255,255,.09) 48%, rgba(255,255,255,.04) 100%), #353535;
+  border-color: rgba(255,255,255,.22);
+}
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn.ghost { background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.01)); }
+.btn.danger:hover:not(:disabled) { background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0) 55%), var(--danger); border-color: rgba(255,255,255,.25); }
+
+.btn.primary:not(:disabled), .btn.play:not(.owned):not(:disabled) {
+  border-color: rgba(255,236,160,.55);
+  background: linear-gradient(180deg, #ffe88a 0%, #ffcf2a 42%, #f2ab00 58%, #e09a00 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.75), inset 0 -2px 4px rgba(150,90,0,.35), 0 0 0 1px rgba(120,70,0,.5), 0 4px 14px rgba(255,194,14,.25);
+  text-shadow: 0 1px 0 rgba(255,255,255,.35);
+}
+/* reflejo de cristal en la mitad de arriba */
+.btn.primary:not(:disabled)::before, .btn.play:not(.owned):not(:disabled)::before {
+  content: ""; position: absolute; inset: 0 0 50% 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.12));
+}
+/* destello que cruza el botón al pasar el puntero */
+.btn.primary:not(:disabled)::after, .btn.play:not(.owned):not(:disabled)::after {
+  content: ""; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 40%; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.75), transparent);
+  transform: skewX(-20deg); transition: none;
+}
+.btn.primary:hover:not(:disabled), .btn.play:not(.owned):hover:not(:disabled) {
+  filter: brightness(1.1) saturate(1.1);
+  background: linear-gradient(180deg, #fff1a8 0%, #ffdb4d 42%, #ffbd14 58%, #eaa400 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), inset 0 -2px 4px rgba(150,90,0,.3), 0 0 0 1px rgba(120,70,0,.5), 0 6px 22px rgba(255,200,40,.5);
+}
+.btn.primary:hover:not(:disabled)::after, .btn.play:not(.owned):hover:not(:disabled)::after {
+  left: 130%; transition: left .7s ease;
+}
+.btn.play:disabled { background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.02)), #2f2f2f; box-shadow: inset 0 1px 0 rgba(255,255,255,.12); }
+
+/* Pantalla grande: el botón principal también es de cristal (el enfocado sigue siendo blanco). */
+.bp-btn { background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.08)); box-shadow: inset 0 1px 0 rgba(255,255,255,.28); }
+.bp-btn.primary { background: linear-gradient(180deg, #ffe88a 0%, #ffcf2a 42%, #f2ab00 58%, #e09a00 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.75), 0 4px 16px rgba(255,194,14,.3); }
+.bp-btn.focus { background: #fff; box-shadow: 0 0 0 4px rgba(255,255,255,.4), 0 0 28px rgba(255,255,255,.35); }
