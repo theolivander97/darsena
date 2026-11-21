@@ -2,7 +2,7 @@
   "name": "darsena",
   "private": true,
   "license": "GPL-3.0-or-later",
-  "version": "0.1.19",
+  "version": "0.2.0",
   "scripts": {
     "dev": "tauri dev",
     "build": "tauri build",

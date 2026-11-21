@@ -1,6 +1,6 @@
 [package]
 name = "darsena"
-version = "0.1.19"
+version = "0.2.0"
 description = "Dársena: launcher de juegos porteados"
 license = "GPL-3.0-or-later"
 edition = "2021"
