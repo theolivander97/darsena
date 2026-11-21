@@ -1203,3 +1203,7 @@ body.bp-on #toasts { z-index: 9500; }
 .bp-btn { background: rgba(255,255,255,.12); }
 .bp-btn.primary { background: linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,0) 60%), var(--accent); }
 .bp-btn.focus { background: #fff; box-shadow: 0 0 0 4px rgba(255,255,255,.35); }
+
+/* «En tu biblioteca»: el mismo botón en versión apagada, con un tinte amarillo suave. */
+.btn.play.owned, .btn.owned { background: rgba(255,194,14,.12); color: var(--accent); border: 1px solid rgba(255,194,14,.35); box-shadow: none; filter: none; }
+.btn.play.owned:hover, .btn.owned:hover { background: rgba(255,194,14,.2); border-color: rgba(255,194,14,.55); filter: none; box-shadow: none; }

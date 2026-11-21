@@ -88,6 +88,7 @@ fn end_session(app: &AppHandle, state: &Arc<AppState>, key: &str, secs: u64) {
         crate::tray::set_playing(app, None);
         crate::discord::set(true, None);
     }
+    crate::tray::refresh_menu(app);
     let _ = app.emit("game-state", (key, false));
     let _ = app.emit("library-changed", ());
 }

@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 const TRAY_ID: &str = "main";
 
@@ -24,10 +24,43 @@ pub fn show_main(app: &AppHandle) {
     }
 }
 
+/// Los últimos juegos jugados (id y título), el más reciente primero.
+fn recent_games(app: &AppHandle) -> Vec<(String, String)> {
+    let Some(state) = app.try_state::<Arc<AppState>>() else { return Vec::new() };
+    let mut played: Vec<(u64, String, String)> = state
+        .store
+        .library
+        .lock()
+        .unwrap()
+        .values()
+        .filter_map(|g| g.last_played.map(|at| (at, g.id.clone(), g.title.clone())))
+        .collect();
+    played.sort_by(|a, b| b.0.cmp(&a.0));
+    played.into_iter().take(5).map(|(_, id, title)| (id, title)).collect()
+}
+
+/// Menú de la bandeja, como el de Steam: tus últimos juegos, las secciones de Dársena y Salir.
 fn menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
-    let open = MenuItem::with_id(app, "open", tr!("Abrir Dársena", "Open Dársena"), true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", tr!("Salir", "Quit"), true, None::<&str>)?;
-    Menu::with_items(app, &[&open, &PredefinedMenuItem::separator(app)?, &quit])
+    let menu = Menu::new(app)?;
+    let recent = recent_games(app);
+    for (id, title) in &recent {
+        menu.append(&MenuItem::with_id(app, format!("play:{id}"), title, true, None::<&str>)?)?;
+    }
+    if !recent.is_empty() {
+        menu.append(&PredefinedMenuItem::separator(app)?)?;
+    }
+    let nav = |id: &str, es: &str, en: &str| MenuItem::with_id(app, format!("nav:{id}"), if crate::i18n::en() { en } else { es }, true, None::<&str>);
+    menu.append(&nav("store", "Explorar", "Explore")?)?;
+    menu.append(&nav("library", "Biblioteca", "Library")?)?;
+    menu.append(&nav("webgames", "Web Games", "Web Games")?)?;
+    menu.append(&nav("community", "Comunidad", "Community")?)?;
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+    menu.append(&nav("bigpicture", "Pantalla grande", "Big screen")?)?;
+    menu.append(&nav("settings", "Ajustes", "Settings")?)?;
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+    menu.append(&MenuItem::with_id(app, "open", tr!("Abrir Dársena", "Open Dársena"), true, None::<&str>)?)?;
+    menu.append(&MenuItem::with_id(app, "quit", tr!("Salir", "Quit"), true, None::<&str>)?)?;
+    Ok(menu)
 }
 
 /// Vuelve a poner el menú de la bandeja en el idioma actual.
@@ -47,6 +80,12 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
         .on_menu_event(|app, e| match e.id.as_ref() {
             "open" => show_main(app),
             "quit" => app.exit(0),
+            id if id.starts_with("play:") => launch_from_shortcut(app, &id["play:".len()..]),
+            // Una sección: se abre la ventana y la interfaz cambia a ella.
+            id if id.starts_with("nav:") => {
+                show_main(app);
+                let _ = app.emit("tray-nav", &id["nav:".len()..]);
+            }
             _ => {}
         })
         .on_tray_icon_event(|tray, e| {

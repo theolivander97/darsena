@@ -294,7 +294,7 @@ function bpWebDetail(gm, port) {
       await call("add_to_library", { game: gm.id });
       [state.library, state.owned] = await Promise.all([invoke("get_library"), invoke("get_owned")]);
       bpRender(true);
-    }]);
+    }, true]);
   }
   buttons.push([t("Volver"), () => bpBack()]);
   const row = {

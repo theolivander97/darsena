@@ -56,8 +56,8 @@ function renderWebgame() {
     ${libHeroHtml(gm).replace(/<\/div>\s*$/, `<button class="web-back" data-web-back="">← ${t("Web Games")}</button></div>`)}
     <div class="lib-bar">
       <button class="btn play" data-web-play="${esc(p.id)}" ${running ? "disabled" : ""}>${running ? t("EJECUTANDO") : icon("play") + t("JUGAR")}</button>
-      ${owned ? `<button class="btn" disabled>${icon("check")}${t("EN TU BIBLIOTECA")}</button>`
-        : `<button class="btn" data-web-add="${esc(p.id)}">${icon("plus")}${t("AÑADIR A LA BIBLIOTECA")}</button>`}
+      ${owned ? `<button class="btn play owned" tabindex="-1">${icon("check")}${t("EN TU BIBLIOTECA")}</button>`
+        : `<button class="btn play" data-web-add="${esc(p.id)}">${icon("plus")}${t("AÑADIR A LA BIBLIOTECA")}</button>`}
       <div class="lib-stat"><span>${t("PORT")}</span><b>${esc(p.port)}</b><span class="muted small">${t("por")} ${esc(p.author)}</span></div>
       <div class="lib-stat"><span>${t("REQUISITO")}</span><b>${webNeedsFiles(p) ? t("Tus archivos del juego") : t("Abre directo")}</b></div>
     </div>
@@ -80,7 +80,12 @@ document.addEventListener("click", async (e) => {
     try { await call("launch_game", { id: d.webPlay }); } finally { b.disabled = false; }
   } else if (d.webAdd) {
     const p = state.byId.get(d.webAdd);
-    if (p) { await call("add_to_library", { game: p.game }); toast(t("Añadido a tu biblioteca"), "ok"); }
+    if (p) {
+      await call("add_to_library", { game: p.game });
+      [state.library, state.owned] = await Promise.all([invoke("get_library"), invoke("get_owned")]);
+      toast(t("Añadido a tu biblioteca"), "ok");
+      if (state.view === "webgame") renderWebgame();
+    }
   }
 });
 

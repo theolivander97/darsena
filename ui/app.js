@@ -1995,7 +1995,16 @@ listen("downloads", (ev) => {
   }
 });
 
+// El menú de la bandeja (clic derecho en su icono) cambia a la sección que se elija.
+listen("tray-nav", (ev) => {
+  const view = ev.payload;
+  if (view === "bigpicture") openBigPicture();
+  else if (view === "settings") openSettings();
+  else show(view);
+});
+
 listen("library-changed", async () => {
+  invoke("refresh_tray").catch(() => {});
   [state.library, state.owned] = await Promise.all([invoke("get_library"), invoke("get_owned")]);
   render();
 });

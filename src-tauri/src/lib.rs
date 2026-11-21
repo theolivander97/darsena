@@ -958,6 +958,12 @@ fn install_data(app: AppHandle, state: S, id: String, source_url: String, index:
     downloads::start_data(app, state.inner().clone(), installed, opt, false).map_err(err)
 }
 
+/// Vuelve a pintar el menú de la bandeja (tus últimos juegos cambian al jugar o instalar).
+#[tauri::command]
+fn refresh_tray(app: AppHandle) {
+    tray::refresh_menu(&app);
+}
+
 #[tauri::command]
 fn list_downloads(state: S) -> Vec<downloads::TaskView> {
     state.dl.views()
@@ -1223,6 +1229,7 @@ macro_rules! app_handler {
             list_mods,
             get_hardware,
             get_discord_link,
+            refresh_tray,
             set_fullscreen,
             cloud_status,
             cloud_upload,
