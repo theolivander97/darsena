@@ -990,7 +990,7 @@ a.link { color: var(--accent); cursor: pointer; }
 .upd-live-state { margin: 14px 0 10px; color: var(--text-bright); font-size: 14px; }
 
 /* ---------- Barra de la tienda (Explorar) ---------- */
-.store-bar { position: sticky; top: -24px; z-index: 60; display: flex; align-items: center; gap: 18px; margin: -24px -32px 18px; padding: 0 32px; height: 46px; background: rgba(20,20,20,.96); border-bottom: 1px solid var(--line); backdrop-filter: blur(8px); }
+.store-bar { position: sticky; top: -24px; z-index: 8; display: flex; align-items: center; gap: 18px; margin: -24px -32px 18px; padding: 0 32px; height: 46px; background: rgba(20,20,20,.96); border-bottom: 1px solid var(--line); backdrop-filter: blur(8px); }
 .sb-menus { display: flex; align-self: stretch; gap: 2px; }
 .sb-menus .tab-wrap { align-self: stretch; }
 .sb-top { height: 100%; padding: 0 14px; border: 0; background: none; color: var(--text); font-size: 14px; cursor: pointer; }
