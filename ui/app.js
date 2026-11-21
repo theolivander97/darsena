@@ -318,7 +318,8 @@ function renderHome() {
     </div>
     <div class="car-dots">${carousel.items.map((_, k) => `<button data-car="${k}" aria-label="${t("Destacado")} ${k + 1}"></button>`).join("")}</div>` : ""}
     ${rowHtml(t("Más descargados"), popular, (gm) => `⇩ ${fmtCount(gm.downloads)}`, "sec-popular")}
-    ${rowHtml(t("Añadidos recientemente"), recent, (gm) => fmtIsoDate(`${gm.addedAt}T00:00:00`), "sec-recent")}`;
+    ${rowHtml(t("Añadidos recientemente"), recent, (gm) => fmtIsoDate(`${gm.addedAt}T00:00:00`), "sec-recent")}
+    ${exploreRows()}`;
 
   showSlide(Math.min(carousel.index, carousel.items.length - 1));
   const el = $("#carousel");
@@ -332,6 +333,7 @@ function renderHome() {
 }
 
 function renderStore() {
+  renderStoreBar();
   const q = $("#search").value.trim().toLowerCase();
   const consoleSel = $("#console-filter").value;
   const onlyLinks = $("#only-links").checked;
@@ -423,8 +425,7 @@ function renderDetail() {
     ${heroHtml(gm, `<div class="hero-console">${esc(consolesText(gm))}</div>
         <h1>${esc(gm.title)}</h1>
         <div class="hero-port">${n > 1 ? t("{n} ports de la comunidad", { n }) : t("Port de la comunidad")}</div>
-        ${ratingLine(state.reviewSummaries[gm.id], "hero-rating")}`)}
-    <button class="btn ghost back" data-goto="store">← ${t("Volver a Explorar")}</button>
+        ${ratingLine(state.reviewSummaries[gm.id], "hero-rating")}`).replace('<div class="hero-text">', `<button class="web-back" data-goto="store">← ${t("Volver a Explorar")}</button><div class="hero-text">`)}
     <div id="dev-banner"></div>
     <div class="action-bar">
       ${owned
@@ -2061,15 +2062,34 @@ function splashStep(id, status, text) {
   el.querySelector(".txt").innerHTML = text;
 }
 
-// Pregunta si instalar la versión nueva. Resuelve true (actualizar) o false (más tarde).
-function askAppUpdate(upd) {
+// Versión nueva: una obligatoria se instala sola y no se puede saltar (si falla, solo queda reintentar); una normal
+// se instala sola tras unos segundos, salvo que se pulse «Más tarde». Resuelve true (actualizar) o false (más tarde).
+function askAppUpdate(upd, failed = false) {
   const box = $("#splash-update");
   box.classList.remove("hidden");
+  box.querySelector(".upd-progress").classList.add("hidden");
+  const actions = box.querySelector(".upd-actions");
+  actions.classList.remove("hidden");
+  const now = box.querySelector("[data-upd=now]");
+  const later = box.querySelector("[data-upd=later]");
   box.querySelector(".upd-title").textContent = t("Dársena {version} está disponible (tienes la {current})", { version: upd.version, current: upd.current });
-  box.querySelector(".upd-notes").textContent = upd.notes || "";
+  box.querySelector(".upd-notes").textContent = upd.mandatory ? `${t("Esta actualización es obligatoria.")} ${upd.notes || ""}` : upd.notes || "";
   return new Promise((resolve) => {
-    box.querySelector("[data-upd=now]").onclick = () => resolve(true);
-    box.querySelector("[data-upd=later]").onclick = () => { box.classList.add("hidden"); resolve(false); };
+    let timer = null;
+    const done = (v) => { clearInterval(timer); if (!v) box.classList.add("hidden"); resolve(v); };
+    now.onclick = () => done(true);
+    later.onclick = () => done(false);
+    if (upd.mandatory) {
+      later.classList.add("hidden");
+      now.textContent = t("REINTENTAR");
+      if (!failed) done(true);
+      return;
+    }
+    later.classList.remove("hidden");
+    let left = 8;
+    const label = () => (now.textContent = `${t("ACTUALIZAR AHORA")} (${left})`);
+    label();
+    timer = setInterval(() => { if (--left <= 0) done(true); else label(); }, 1000);
   });
 }
 
@@ -2107,16 +2127,19 @@ async function startup() {
     const upd = await withTimeout(invoke("check_app_update"), 10000);
     if (upd) {
       splashStep("app", "warn", t("Hay una versión nueva: {version}", { version: `<b>${esc(upd.version)}</b>` }));
-      if (await askAppUpdate(upd)) {
+      let go = await askAppUpdate(upd);
+      while (go) {
         try {
           await installAppUpdate();
           return;
         } catch (e) {
           splashStep("app", "error", `${t("No se pudo actualizar:")} ${esc(String(e))}`);
+          // Una obligatoria no deja entrar hasta que se instale: se vuelve a ofrecer.
+          if (!upd.mandatory) break;
+          go = await askAppUpdate(upd, true);
         }
-      } else {
-        splashStep("app", "done", t("Actualización pospuesta (sigues en la v{version})", { version: esc(version) }));
       }
+      if (!go) splashStep("app", "done", t("Actualización pospuesta (sigues en la v{version})", { version: esc(version) }));
     } else {
       splashStep("app", "done", t("Dársena está al día (v{version})", { version: esc(version) }));
     }

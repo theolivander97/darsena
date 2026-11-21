@@ -983,6 +983,41 @@ a.link { color: var(--accent); cursor: pointer; }
 .webgame .lib-bar { margin-top: 0; }
 .webgame .synopsis, .webgame .req { margin-top: 16px; max-width: 880px; }
 #web-search { min-width: 240px; }
+/* ---------- Actualización obligatoria con la app abierta ---------- */
+.upd-live { position: fixed; inset: 0; z-index: 9800; display: flex; align-items: center; justify-content: center; background: rgba(8,8,8,.92); backdrop-filter: blur(6px); }
+.upd-live-card { width: min(520px, 90vw); padding: 26px 28px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.upd-live-card h2 { margin: 0 0 8px; font-size: 20px; color: var(--text-bright); }
+.upd-live-state { margin: 14px 0 10px; color: var(--text-bright); font-size: 14px; }
+
+/* ---------- Barra de la tienda (Explorar) ---------- */
+.store-bar { position: sticky; top: -24px; z-index: 60; display: flex; align-items: center; gap: 18px; margin: -24px -32px 18px; padding: 0 32px; height: 46px; background: rgba(20,20,20,.96); border-bottom: 1px solid var(--line); backdrop-filter: blur(8px); }
+.sb-menus { display: flex; align-self: stretch; gap: 2px; }
+.sb-menus .tab-wrap { align-self: stretch; }
+.sb-top { height: 100%; padding: 0 14px; border: 0; background: none; color: var(--text); font-size: 14px; cursor: pointer; }
+.sb-top:hover { color: var(--text-bright); background: rgba(255,255,255,.05); }
+.sb-caret { font-size: 10px; opacity: .7; }
+.store-bar .tab-menu { max-height: 70vh; overflow-y: auto; }
+.store-bar .tab-menu button { display: flex; justify-content: space-between; gap: 18px; width: 100%; text-align: left; border: 0; background: none; padding: 9px 18px; font-size: 14px; color: var(--text); cursor: pointer; }
+.store-bar .tab-menu button:hover { background: var(--accent); color: var(--on-accent); }
+.store-bar .tab-menu button:hover .muted { color: inherit; }
+.sb-search { margin-left: auto; }
+.sb-search input { width: 280px; height: 30px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--radius); background: #101010; color: var(--text-bright); font-size: 13px; }
+.sb-search input:focus { outline: none; border-color: var(--accent); }
+
+/* Las secciones a las que se baja desde la barra no quedan tapadas por ella. */
+#home .section-title, .home-all { scroll-margin-top: 62px; }
+
+/* ---------- Explorar por categoría ---------- */
+.cat-row { position: relative; }
+.cat-scroll { display: flex; gap: 14px; overflow-x: auto; scroll-behavior: smooth; padding: 4px 2px 10px; scrollbar-width: none; }
+.cat-scroll::-webkit-scrollbar { display: none; }
+.cat-tile { position: relative; flex: 0 0 230px; height: 140px; border: 0; padding: 0; border-radius: 10px; overflow: hidden; cursor: pointer; color: var(--text-bright); background: hsl(var(--h) 45% 22%); transition: transform .14s, box-shadow .14s; }
+.cat-tile:hover { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(0,0,0,.55); }
+.cat-mosaic { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); opacity: .55; filter: saturate(.9); }
+.cat-mosaic img { width: 100%; height: 70px; object-fit: cover; }
+.cat-tile::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, hsl(var(--h) 60% 30% / .55), hsl(var(--h) 55% 12% / .75)); }
+.cat-label { position: absolute; z-index: 1; left: 50%; top: 46%; transform: translate(-50%, -50%); max-width: 88%; padding: 7px 16px; background: #fff; color: #111; font-weight: 700; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; text-align: center; border-radius: 3px; }
+.cat-count { position: absolute; z-index: 1; left: 0; right: 0; bottom: 10px; text-align: center; font-size: 12px; color: rgba(255,255,255,.85); }
 .com-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
 .com-head h1 { margin: 0 0 4px; font-size: 30px; }
 .com-reviews { display: grid; align-items: start; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }

@@ -23,11 +23,17 @@
   <main id="app">
     <!-- EXPLORAR -->
     <section id="view-store" class="view active">
+      <!-- Barra de la tienda: menús y buscador -->
+      <div class="store-bar" id="store-bar">
+        <nav class="sb-menus" id="store-menus"></nav>
+        <div class="sb-search">
+          <input id="search" type="search" data-i18n-ph="Buscar en Dársena" placeholder="Buscar en Dársena" autocomplete="off" />
+        </div>
+      </div>
       <!-- Inicio: carrusel y filas. Se oculta al buscar o filtrar. -->
       <div id="home"></div>
       <h2 class="section-title home-all" id="all-title" data-i18n="Todos los juegos">Todos los juegos</h2>
       <div class="toolbar">
-        <input id="search" type="search" data-i18n-ph="Buscar juego, port o autor…" placeholder="Buscar juego, port o autor…" autocomplete="off" />
         <select id="console-filter"><option value="">Todas las consolas</option></select>
         <select id="sort">
           <option value="title" data-i18n="Orden: A-Z">Orden: A-Z</option>
@@ -305,6 +311,8 @@
   <script src="juegos-propios.js"></script>
   <script src="nube.js"></script>
   <script src="webgames.js"></script>
+  <script src="explorar.js"></script>
+  <script src="actualizacion.js"></script>
   <script src="discord.js"></script>
   <script src="pantalla-grande.js"></script>
 </body>

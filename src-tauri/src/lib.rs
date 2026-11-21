@@ -272,13 +272,20 @@ struct AppUpdateInfo {
     version: String,
     current: String,
     notes: Option<String>,
+    /// La release lo marca en latest.json ("mandatory": true): se instala sola y no se puede saltar.
+    mandatory: bool,
 }
 
 /// ¿Hay una versión nueva del launcher en la última release de GitHub?
 #[tauri::command]
 async fn check_app_update(app: AppHandle) -> R<Option<AppUpdateInfo>> {
     let update = app.updater().map_err(|e| e.to_string())?.check().await.map_err(|e| e.to_string())?;
-    Ok(update.map(|u| AppUpdateInfo { version: u.version.clone(), current: u.current_version.clone(), notes: u.body.clone() }))
+    Ok(update.map(|u| AppUpdateInfo {
+        version: u.version.clone(),
+        current: u.current_version.clone(),
+        notes: u.body.clone(),
+        mandatory: u.raw_json.get("mandatory").and_then(|m| m.as_bool()).unwrap_or(false),
+    }))
 }
 
 /// Descarga la versión nueva (verificando su firma), la instala y reinicia el launcher.

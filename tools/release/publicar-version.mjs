@@ -3,6 +3,7 @@
 //
 // Uso:  node tools\release\publicar-version.mjs 0.2.0 "Notas de la versión"
 //       node tools\release\publicar-version.mjs 0.2.0 "Notas" --sin-compilar   (reusar el último build)
+//       node tools\release\publicar-version.mjs 0.2.0 "Notas" --obligatoria     (se instala sola y no se puede saltar)
 //
 // Necesita: GITHUB_TOKEN en tools/.env y la clave de firma en D:\tools\keys\darsena.key (+ .password).
 
@@ -13,6 +14,8 @@ import { fail, gh, OWNER, REPO, ROOT, TOOLS } from "../comun.mjs";
 
 const [version, notes = ""] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const skipBuild = process.argv.includes("--sin-compilar");
+// --obligatoria: los Dársena instalados se actualizan solos y no pueden saltarse esta versión.
+const mandatory = process.argv.includes("--obligatoria");
 const KEY = "D:/tools/keys/darsena.key";
 const BUNDLE = "D:/tools/target/darsena/release/bundle/nsis";
 const confFile = join(ROOT, "src-tauri", "tauri.conf.json");
@@ -73,6 +76,7 @@ const signature = readFileSync(join(BUNDLE, `${setup}.sig`), "utf8").trim();
 const latest = {
   version,
   notes,
+  ...(mandatory ? { mandatory: true } : {}),
   pub_date: new Date().toISOString(),
   platforms: {
     "windows-x86_64": {
