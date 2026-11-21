@@ -259,6 +259,7 @@ const EN = {
   "Necesitan tus archivos del juego": "Need your game files",
   "Aún no hay juegos web.": "There are no web games yet.",
   "Juegos que se juegan en el navegador": "Games played in the browser",
+  "Buscar": "Search",
   "Servidor de Discord": "Discord server",
   "Únete al servidor de Discord": "Join the Discord server",
   "Spam o engañoso": "Spam or misleading",

@@ -1000,9 +1000,15 @@ a.link { color: var(--accent); cursor: pointer; }
 .store-bar .tab-menu button { display: flex; justify-content: space-between; gap: 18px; width: 100%; text-align: left; border: 0; background: none; padding: 9px 18px; font-size: 14px; color: var(--text); cursor: pointer; }
 .store-bar .tab-menu button:hover { background: var(--accent); color: var(--on-accent); }
 .store-bar .tab-menu button:hover .muted { color: inherit; }
-.sb-search { margin-left: auto; }
-.sb-search input { width: 280px; height: 30px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--radius); background: #101010; color: var(--text-bright); font-size: 13px; }
-.sb-search input:focus { outline: none; border-color: var(--accent); }
+.sb-search { margin-left: auto; display: flex; align-items: stretch; height: 32px; border: 1px solid rgba(255,255,255,.1); border-radius: 9px; background: rgba(255,255,255,.05); overflow: hidden; transition: border-color .15s, box-shadow .15s, background .15s; }
+.sb-search:focus-within { border-color: rgba(255,194,14,.7); background: rgba(255,255,255,.08); box-shadow: 0 0 0 3px rgba(255,194,14,.14); }
+.sb-search input { width: 260px; padding: 0 12px; border: 0; background: none; color: var(--text-bright); font-size: 13px; transition: width .2s ease; }
+.sb-search input:focus { outline: none; width: 340px; }
+.sb-search input::placeholder { color: var(--muted); }
+.sb-search input::-webkit-search-cancel-button { filter: invert(.7); }
+.sb-search button { display: grid; place-items: center; width: 38px; border: 0; border-left: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.04); color: var(--text); cursor: pointer; transition: background .15s, color .15s; }
+.sb-search button:hover, .sb-search:focus-within button { background: var(--accent); color: var(--on-accent); border-left-color: transparent; }
+.sb-search button .ico { width: 16px; height: 16px; margin: 0; }
 
 /* Las secciones a las que se baja desde la barra no quedan tapadas por ella. */
 #home .section-title, .home-all { scroll-margin-top: 62px; }
@@ -1207,3 +1213,8 @@ body.bp-on #toasts { z-index: 9500; }
 /* «En tu biblioteca»: el mismo botón en versión apagada, con un tinte amarillo suave. */
 .btn.play.owned, .btn.owned { background: rgba(255,194,14,.12); color: var(--accent); border: 1px solid rgba(255,194,14,.35); box-shadow: none; filter: none; }
 .btn.play.owned:hover, .btn.owned:hover { background: rgba(255,194,14,.2); border-color: rgba(255,194,14,.55); filter: none; box-shadow: none; }
+
+/* ---------- Botón de Pantalla grande (esquina de la cabecera) ---------- */
+.bp-open { display: grid; place-items: center; width: 38px; height: 34px; margin-left: 8px; padding: 0; border: 1px solid transparent; border-radius: 9px; background: none; color: var(--text); cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+.bp-open:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.12); color: var(--accent); }
+.bp-open .ico { width: 22px; height: 22px; margin: 0; }

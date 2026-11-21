@@ -17,6 +17,8 @@ const ICON_PATHS = {
   star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
   play: '<path d="M7 4.5v15l12-7.5z"/>',
   pause: '<path d="M8 5v14M16 5v14"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+  gamepad: '<path d="M6 11.5h4M8 9.5v4"/><circle cx="15.2" cy="10.6" r=".9" fill="currentColor"/><circle cx="17.4" cy="12.8" r=".9" fill="currentColor"/><path d="M17.3 5.5H6.7a4 4 0 0 0-3.9 3.3l-1 6.1a2.5 2.5 0 0 0 4.4 1.9l1.3-2h9l1.3 2a2.5 2.5 0 0 0 4.4-1.9l-1-6.1a4 4 0 0 0-3.9-3.3z"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   external: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',

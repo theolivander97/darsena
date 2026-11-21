@@ -4,6 +4,15 @@
 
 // ---------- Barra de la tienda ----------
 
+// Botón de la esquina (como el de Big Picture de Steam): abre Pantalla grande.
+$("#bp-open")?.addEventListener("click", () => openBigPicture());
+// La lupa lleva al listado con lo escrito (Intro hace lo mismo).
+$("#search-btn")?.addEventListener("click", () => {
+  show("store");
+  renderStore();
+  $("#search").focus();
+});
+
 const franchiseOfGame = (gm) => gm.ports.find((p) => p.franchise)?.franchise || "";
 
 // Consolas con más juegos primero: las categorías que se enseñan en el menú y en la fila.
