@@ -9,7 +9,10 @@
 <meta name="description" content="Dársena es un launcher gratuito y de código abierto para juegos porteados por la comunidad: descompilaciones, recompilaciones y ports nativos de PC.">
 <meta property="og:title" content="Dársena">
 <meta property="og:description" content="Descarga, actualiza y juega ports de la comunidad desde un solo sitio. Gratis y de código abierto.">
-<meta property="og:image" content="img/explorar.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://theolivander97.github.io/darsena/">
+<meta property="og:image" content="https://theolivander97.github.io/darsena/img/explorar.png">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="logo.svg">
 <style>
   /* Fichas de color: la superficie es casi negra con un tinte de puerto; el amarillo se reserva para la acción principal. */
@@ -111,7 +114,7 @@
 <header>
   <div class="wrap">
     <a class="brand" href="#"><img src="logo.svg" alt="">DÁRSENA</a>
-    <nav aria-label="Principal">
+    <nav aria-label="Principal" data-label-es="Principal" data-label-en="Main">
       <a class="hide" href="#que-es" data-es="Qué es" data-en="What it is">Qué es</a>
       <a class="hide" href="#capturas" data-es="Capturas" data-en="Screenshots">Capturas</a>
       <a class="hide" href="#preguntas" data-es="Preguntas" data-en="FAQ">Preguntas</a>
@@ -140,7 +143,7 @@
         </div>
         <p class="meta" id="ver" data-es="Windows 10 y 11 · Gratis" data-en="Windows 10 and 11 · Free">Windows 10 y 11 · Gratis</p>
       </div>
-      <figure class="window"><img src="img/explorar.png" alt="Dársena: pantalla Explorar con el catálogo de ports" width="1280" height="720"></figure>
+      <figure class="window"><img src="img/explorar.png" alt="Dársena: pantalla Explorar con el catálogo de ports" data-alt-es="Dársena: pantalla Explorar con el catálogo de ports" data-alt-en="Dársena: the Explore screen with the port catalog" width="1280" height="720"></figure>
     </div>
   </div>
 
@@ -163,13 +166,13 @@
         <h2 data-es="Desde el sofá, con mando." data-en="From the couch, with a controller.">Desde el sofá, con mando.</h2>
         <p class="sub" style="margin-bottom:0" data-es="Una vista a pantalla completa pensada para el mando o el teclado: tu biblioteca, el catálogo y las descargas sin tocar el ratón." data-en="A full-screen view made for a controller or keyboard: your library, the catalog and downloads without touching the mouse.">Una vista a pantalla completa pensada para el mando o el teclado: tu biblioteca, el catálogo y las descargas sin tocar el ratón.</p>
       </div>
-      <figure class="window reveal"><img src="img/pantalla-grande-inicio.png" alt="Dársena en Pantalla grande" loading="lazy" width="1280" height="720"></figure>
+      <figure class="window reveal"><img src="img/pantalla-grande-inicio.png" alt="Dársena en Pantalla grande" data-alt-es="Dársena en Pantalla grande" data-alt-en="Dársena in Big screen mode" loading="lazy" width="1280" height="720"></figure>
     </div>
   </section>
 
   <section>
     <div class="wrap split flip">
-      <figure class="window reveal"><img src="img/webgames.png" alt="Web Games: juegos que se abren directamente desde Dársena" loading="lazy" width="1280" height="720"></figure>
+      <figure class="window reveal"><img src="img/webgames.png" alt="Web Games: juegos que se abren directamente desde Dársena" data-alt-es="Web Games: juegos que se abren directamente desde Dársena" data-alt-en="Web Games: games that open straight from Dársena" loading="lazy" width="1280" height="720"></figure>
       <div class="copy reveal">
         <p class="eyebrow" data-es="Web Games" data-en="Web Games">Web Games</p>
         <h2 data-es="Juegos que se abren en el navegador." data-en="Games that open in the browser.">Juegos que se abren en el navegador.</h2>
@@ -186,7 +189,7 @@
     <div class="wrap">
       <h2 data-es="Así se ve." data-en="This is how it looks.">Así se ve.</h2>
       <p class="sub" data-es="Explora, abre la ficha y juega." data-en="Browse, open a page and play.">Explora, abre la ficha y juega.</p>
-      <div class="gallery" tabindex="0" aria-label="Capturas">
+      <div class="gallery" tabindex="0" aria-label="Capturas" data-label-es="Capturas" data-label-en="Screenshots">
         <figure><img src="img/ficha.png" alt="" loading="lazy" width="1280" height="720"><figcaption data-es="Ficha de un juego" data-en="Game page">Ficha de un juego</figcaption></figure>
         <figure><img src="img/biblioteca.png" alt="" loading="lazy" width="1280" height="720"><figcaption data-es="Tu biblioteca" data-en="Your library">Tu biblioteca</figcaption></figure>
         <figure><img src="img/pantalla-grande-ficha.png" alt="" loading="lazy" width="1280" height="720"><figcaption data-es="Pantalla grande" data-en="Big screen">Pantalla grande</figcaption></figure>
@@ -209,7 +212,7 @@
         <ul class="reqs">
           <li data-es="Windows 10 u 11 (64 bits)" data-en="Windows 10 or 11 (64-bit)">Windows 10 u 11 (64 bits)</li>
           <li data-es="Instalador de unos 7 MB" data-en="About 7 MB installer">Instalador de unos 7 MB</li>
-          <li data-es="Sin anuncios ni cuentas" data-en="No ads, no account">Sin anuncios ni cuentas</li>
+          <li data-es="Sin anuncios ni cuenta obligatoria" data-en="No ads, no required account">Sin anuncios ni cuenta obligatoria</li>
         </ul>
       </div>
     </div>
@@ -217,12 +220,11 @@
 
   <section id="preguntas" class="band">
     <div class="wrap" style="max-width:820px">
-      <h2 data-es="Preguntas frecuentes" data-en="FAQ">Preguntas frecuentes</h2>
-      <p class="sub"></p>
+      <h2 style="margin-bottom:28px" data-es="Preguntas frecuentes" data-en="FAQ">Preguntas frecuentes</h2>
       <details><summary data-es="¿Dársena incluye juegos?" data-en="Does Dársena include games?">¿Dársena incluye juegos?</summary><p data-es="No. Solo lista ports hechos por la comunidad y descarga las builds que sus autores publican en GitHub. Los datos del juego original los pones tú, de tu propia copia." data-en="No. It only lists community-made ports and downloads the builds their authors publish on GitHub. You provide the original game data from your own copy.">No. Solo lista ports hechos por la comunidad y descarga las builds que sus autores publican en GitHub. Los datos del juego original los pones tú, de tu propia copia.</p></details>
       <details><summary data-es="¿Por qué Windows me avisa al instalar?" data-en="Why does Windows warn me when installing?">¿Por qué Windows me avisa al instalar?</summary><p data-es="El instalador todavía no tiene firma digital, así que SmartScreen desconfía de él. Pulsa «Más información» y luego «Ejecutar de todas formas». El código y la compilación son públicos en GitHub." data-en="The installer isn't digitally signed yet, so SmartScreen is wary of it. Click “More info”, then “Run anyway”. The code and the build are public on GitHub.">El instalador todavía no tiene firma digital, así que SmartScreen desconfía de él. Pulsa «Más información» y luego «Ejecutar de todas formas». El código y la compilación son públicos en GitHub.</p></details>
       <details><summary data-es="¿Es de código abierto?" data-en="Is it open source?">¿Es de código abierto?</summary><p data-es="Sí, bajo GPL-3.0-or-later. Puedes leer el código, compilarlo tú o proponer cambios." data-en="Yes, under GPL-3.0-or-later. You can read the code, build it yourself or propose changes.">Sí, bajo GPL-3.0-or-later. Puedes leer el código, compilarlo tú o proponer cambios.</p></details>
-      <details><summary data-es="Soy autor de un port, ¿cómo lo añado?" data-en="I'm a port author, how do I add mine?">Soy autor de un port, ¿cómo lo añado?</summary><p><span data-es="Desde la propia aplicación, en «Subir un port», o con una solicitud en el repositorio. Mira la " data-en="From the app, under “Submit a port”, or with a request in the repository. See the ">Desde la propia aplicación, en «Subir un port», o con una solicitud en el repositorio. Mira la </span><a href="https://github.com/theolivander97/darsena-launcher/wiki" target="_blank" rel="noopener">wiki</a>.</p></details>
+      <details><summary data-es="Soy autor de un port, ¿cómo lo añado?" data-en="I'm a port author, how do I add mine?">Soy autor de un port, ¿cómo lo añado?</summary><p><span data-es="Desde la propia aplicación, en «Subir un port», o con una solicitud en el repositorio. Mira la " data-en="From the app, under “Upload a port”, or with a request in the repository. See the ">Desde la propia aplicación, en «Subir un port», o con una solicitud en el repositorio. Mira la </span><a href="https://github.com/theolivander97/darsena-launcher/wiki" target="_blank" rel="noopener">wiki</a>.</p></details>
     </div>
   </section>
 </main>
@@ -230,17 +232,35 @@
 <footer>
   <div class="wrap">
     <span data-es="Dársena es software libre, GPL-3.0-or-later. No está afiliada a ninguna empresa de videojuegos." data-en="Dársena is free software, GPL-3.0-or-later. It isn't affiliated with any game company.">Dársena es software libre, GPL-3.0-or-later. No está afiliada a ninguna empresa de videojuegos.</span>
-    <span><a href="https://github.com/theolivander97/darsena">Código</a> · <a href="https://github.com/theolivander97/darsena-launcher/wiki">Wiki</a> · <a href="https://github.com/theolivander97/darsena-launcher/releases/latest">Descargas</a></span>
+    <span><a href="https://github.com/theolivander97/darsena" data-es="Código" data-en="Code">Código</a> · <a href="https://github.com/theolivander97/darsena-launcher/wiki">Wiki</a> · <a href="https://github.com/theolivander97/darsena-launcher/releases/latest" data-es="Descargas" data-en="Downloads">Descargas</a></span>
   </div>
 </footer>
 
 <script>
   // Idioma: español por defecto; inglés si el navegador está en inglés o si se elige con el botón.
   const langBtn = document.getElementById("lang");
+  const META = {
+    title: { es: "Dársena, el launcher de ports", en: "Dársena, the port launcher" },
+    desc: {
+      es: "Dársena es un launcher gratuito y de código abierto para juegos porteados por la comunidad: descompilaciones, recompilaciones y ports nativos de PC.",
+      en: "Dársena is a free, open-source launcher for community-ported games: decompilations, recompilations and native PC ports.",
+    },
+    og: {
+      es: "Descarga, actualiza y juega ports de la comunidad desde un solo sitio. Gratis y de código abierto.",
+      en: "Download, update and play community ports from one place. Free and open source.",
+    },
+  };
   function setLang(lang) {
     document.documentElement.lang = lang;
     document.querySelectorAll("[data-es]").forEach((el) => { el.textContent = el.dataset[lang]; });
     langBtn.textContent = lang === "es" ? "EN" : "ES";
+    // Título, descripciones y textos alternativos también cambian de idioma.
+    document.title = META.title[lang];
+    document.querySelector('meta[name="description"]').content = META.desc[lang];
+    document.querySelector('meta[property="og:description"]').content = META.og[lang];
+    document.querySelector('meta[property="og:title"]').content = "Dársena";
+    document.querySelectorAll("[data-alt-es]").forEach((el) => { el.alt = el.dataset[lang === "es" ? "altEs" : "altEn"]; });
+    document.querySelectorAll("[data-label-es]").forEach((el) => { el.setAttribute("aria-label", el.dataset[lang === "es" ? "labelEs" : "labelEn"]); });
     try { localStorage.setItem("lang", lang); } catch {}
     showVersion();
   }
